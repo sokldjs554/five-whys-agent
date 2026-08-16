@@ -18,6 +18,19 @@ from datetime import datetime
 
 from fivewhys.models import LogRecord
 
+def _coerce_id(raw) -> int | str:
+    """ES 문서 id를 정수로 되돌린다.
+
+    LogStore를 거쳐 색인하면 id가 정수 문자열이지만, id 없이 색인하면
+    ES가 임의 문자열 id를 생성한다. 후자를 int()로 변환하려다 터지지 않도록
+    변환 실패 시 원본 문자열을 그대로 쓴다.
+    """
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return raw
+
+
 INDEX_MAPPING = {
     "mappings": {
         "properties": {
@@ -122,7 +135,7 @@ class ElasticsearchLogSearch:
             src = hit["_source"]
             out.append(
                 {
-                    "id": int(hit["_id"]),
+                    "id": _coerce_id(hit["_id"]),
                     "ts": src["ts"],
                     "service": src["service"],
                     "level": src["level"],

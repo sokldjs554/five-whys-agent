@@ -47,6 +47,21 @@ def test_build_query_structure():
     assert any("range" in f for f in filters)
 
 
+class StubAutoIdES(StubES):
+    """id 없이 색인해 ES가 임의 문자열 id를 생성한 경우."""
+
+    def search(self, index, query, size):
+        resp = super().search(index, query, size)
+        resp["hits"]["hits"][0]["_id"] = "kJ2xY9sBqL"
+        return resp
+
+
+def test_search_logs_tolerates_non_numeric_id():
+    es = ElasticsearchLogSearch(client=StubAutoIdES())
+    rows = es.search_logs("connection")
+    assert rows[0]["id"] == "kJ2xY9sBqL"  # int() 변환 실패해도 크래시하지 않는다
+
+
 def test_search_logs_maps_hits():
     stub = StubES()
     es = ElasticsearchLogSearch(client=stub, index="test-idx")
