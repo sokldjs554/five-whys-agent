@@ -1,5 +1,7 @@
 # Five Whys Agent
 
+[**공개 데모**](https://sokldjs554.github.io/five-whys-agent/) · [**백엔드 구현**](https://github.com/sokldjs554/five-whys-agent/tree/2848ab1e29d44421fdc38f1cbe249d8b65776985/src/fivewhys/investigation) · [**통합 테스트 결과**](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/docs/verification/RESULTS.md)
+
 **LLM 에이전트 기반 장애 로그 근본원인분석(RCA) 자동화**
 
 장애가 나면 SRE는 로그를 뒤지고, 배포 이력을 대조하고, "왜?"를 반복하며 근본 원인을
@@ -14,8 +16,6 @@
 
 ## 공개 데모 · 배포 이후 주문 서비스가 느려진 이유
 
-[**브라우저에서 주문 서비스 장애 조사 열기**](https://sokldjs554.github.io/five-whys-agent/)
-
 “배포 이후 주문 서비스의 응답이 느려졌다. 어떤 변경이 관련돼 있나?”를 조사합니다. 공개 데모는 합성 시나리오 `db_pool_exhaustion`을 팀별로 실행해 저장한 기록을 재생합니다. 로그인이나 API 키 없이 열 수 있습니다. 표시되는 작업 ID, 검색 결과, 콜백 이력은 기록 당시의 값입니다.
 
 1. **주문팀 → 조사 기록 열기**를 누릅니다. 첫 원인 후보에서 `order-service v2.4.0` 배포와 로그 인용을 열고, 타임라인에서 변경 시각과 오류 시각을 대조합니다.
@@ -23,7 +23,14 @@
 3. **재전송 기록 보기**를 누르면 같은 작업의 콜백이 HTTP 503 이후 200을 받은 이력이 열립니다. 이 규칙 기반 실행의 LLM 호출 수는 재전송 전후 모두 0회입니다.
 4. 상단에서 **플랫폼팀**으로 바꿔 같은 사건을 다시 열고 팀별로 조회된 근거를 비교합니다.
 
-조사 기록을 생성한 확장판에서는 FastAPI가 요청을 접수하고 RabbitMQ 워커가 팀 권한에 따라 Milvus와 Neo4j를 조회합니다. 작업 결과와 콜백 시도는 PostgreSQL에 저장합니다. 아래 빠른 시작은 이 저장소 기본 브랜치의 CLI와 동기 분석 API를 실행합니다. [공개 데모 파일과 팀별 기록](https://github.com/sokldjs554/five-whys-agent/tree/gh-pages)
+### 데모 장면에서 코드로
+
+| 확인할 장면 | 구현과 검증 |
+|---|---|
+| 주문팀·플랫폼팀의 근거 차이 | LangChain 검색기가 Milvus에 팀 필터를 적용하고 Neo4j에서 허용된 서비스 관계를 따라간다. 통합 테스트는 플랫폼 전용 슬로우 쿼리의 ID와 원문 경로를 팀별 검색 결과 및 모델 대역 입력에서 대조한다. [검색 구현](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/src/fivewhys/investigation/retrieval.py) · [후보·경로·원문 접근 테스트](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/tests/test_investigation_flow.py#L94-L127) · [모델 입력 비교](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/tests/test_investigation_flow.py#L256-L264) |
+| 콜백 실패 뒤 같은 작업 재전송 | RabbitMQ 워커가 PostgreSQL에 저장한 결과를 재전송한다. 통합 테스트에서 503 → 200 이후 분석은 1회였고 모델 대역 호출은 3회로 유지됐다. [워커](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/src/fivewhys/investigation/worker.py) · [작업 저장](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/src/fivewhys/investigation/jobs.py) · [재전송 전후 비교](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/tests/test_investigation_flow.py#L225-L254) · [DB 실행 횟수 확인](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/tests/test_investigation_flow.py#L266-L279) |
+
+공개 데모의 실행 기준은 `4d01473`이다. [공개 구현 브랜치](https://github.com/sokldjs554/five-whys-agent/tree/demo/incident-backend)의 `2848ab1`에서 같은 소스와 테스트를 확인할 수 있다. 실제 분석 요청을 보내려면 해당 브랜치에서 `docker compose up -d --build --wait`를 실행하고 `http://127.0.0.1:8750/`을 연다. 아래 빠른 시작은 기본 브랜치의 CLI와 동기 API용이다. [확장판 Compose](https://github.com/sokldjs554/five-whys-agent/blob/2848ab1e29d44421fdc38f1cbe249d8b65776985/docker-compose.yml) · [공개 재생 기록](https://github.com/sokldjs554/five-whys-agent/tree/gh-pages/records)
 
 ## 왜 이 프로젝트인가
 
