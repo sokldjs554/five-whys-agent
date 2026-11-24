@@ -1,0 +1,25 @@
+name: Test
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FIVEWHYS_REVISION: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the demo stack
+        run: docker compose up -d --build --wait --wait-timeout 240
+      - name: Run the unit and service-backed tests
+        run: docker compose run --build --rm test
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=120
+      - name: Stop the demo stack
+        if: always()
+        run: docker compose down --volumes

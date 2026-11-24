@@ -1,4 +1,59 @@
-# Five Whys Agent
+# Five Whys · 주문 서비스 장애 조사
+
+운영자가 사건을 의뢰하면 FastAPI가 작업 ID를 발급한다. 워커는 요청한 팀이 볼 수 있는 관측 로그, 변경 이력, 과거 장애 보고서를 조사한다. 면접관은 브라우저에서 원인 후보를 선택해 **어떤 로그와 배포, 어느 문서의 몇 번째 줄이 그 판단을 뒷받침했는지** 확인할 수 있다.
+
+[공개 데모](https://sokldjs554.github.io/five-whys-agent/) · [백엔드 구현](src/fivewhys/investigation/) · [통합 테스트 결과](docs/verification/RESULTS.md)
+
+## 실행과 3분 시연
+
+Docker와 Compose v2.23.1 이상이 필요하다. 체크아웃의 루트에서 실행한다. 처음 시작할 때 서비스 이미지를 내려받고 합성 자료를 색인한다.
+
+```bash
+FIVEWHYS_REVISION=$(git rev-parse HEAD) docker compose up -d --build --wait
+```
+
+브라우저에서 **http://127.0.0.1:8750/** 을 연다. 시연 데이터는 `db_pool_exhaustion`, 시드 42다. 기본 규칙 엔진은 키 없이 **지금 생성한 작업**을 처리하며 매번 Milvus와 Neo4j를 조회한다. `Claude`를 선택하면 같은 도구 루프가 Anthropic Messages API를 호출한다. `ANTHROPIC_API_KEY`와 `FIVEWHYS_MODEL`을 워커/API 환경에 제공한 뒤 Compose를 다시 실행하면 된다.
+
+1. **주문팀에서 조사 실행.** 2026년 7월 3일 14:00 KST 주문 서비스 지연 사건과 미리 입력된 질문을 확인한다. 요청 후 작업 세부 정보에서 실제 ID와 접수·처리·완료 시간을 확인한다.
+2. **가설과 근거 열기.** 주문 조회 쿼리 변경 후보를 선택한다. 로그의 HikariPool 대기, `order-service v2.4.0` 변경 내용, 과거 보고서의 인용 행을 차례로 연다. 타임라인에서는 배포 시각과 첫 오류 시각을 비교한다.
+3. **검색 비교.** 같은 질문에 대한 벡터 후보와 그래프 검증 후 후보를 확인한다. 증상이 비슷한 다른 장애 보고서의 서비스와 현재 배포가 실제 변경한 서비스를 비교한다. 원문과 관계 경로는 각각 열어 볼 수 있다.
+4. **콜백과 권한.** 결과 전달의 첫 503 이후 콜백 재전송을 누른다. HTTP 200 응답까지의 전송 이력, 작업 ID와 LLM 호출 수를 확인한다. 플랫폼팀 계정으로 바꿔 같은 질문을 다시 실행하면 DB 슬로우 쿼리 원문에 접근할 수 있다. 주문팀의 이전 작업은 해당 팀 전용이다.
+
+기존 CLI `fivewhys demo --scenario db_pool_exhaustion`, `fivewhys evaluate`, 동기 `POST /analyze`와 `GET /reports/{report_id}`도 사용할 수 있다. [변경 전 CLI 캡처와 실행 결과](docs/verification/baseline/README.md) · [REST 및 콜백 연동 예시](docs/INTEGRATION.md)
+
+## 지원서에 연결할 구현 근거
+
+| 업무·기술 | 코드 | 검증 | 면접에서 볼 장면 |
+|---|---|---|---|
+| Python · FastAPI · REST | [작업·결과·근거 라우트](src/fivewhys/investigation/routes.py), [기존 동기 API](src/fivewhys/api.py) | [인증·입력·상태 계약](tests/test_investigation_api.py), [기존 API 회귀](tests/test_api.py) | 조사 실행, 작업 ID로 상태 조회, 원문 열기 |
+| 직접 LLM 호출 · 프롬프트 · Pydantic | [Anthropic 어댑터](src/fivewhys/agent/llm.py), [공유 도구 루프](src/fivewhys/agent/five_whys.py), [조사 프롬프트·보고서 검증](src/fivewhys/investigation/analysis.py) | [SDK 요청 본문·인용·수정 한도·호출 실패](tests/test_investigation_analysis.py) | 엔진 선택, 원인 후보별 인용과 도구 실행 기록 |
+| LangChain · Milvus · 인덱싱 | [원문 청크·버전·권한](src/fivewhys/investigation/retrieval_corpus.py), [Document·Retriever·임베딩 저장](src/fivewhys/investigation/retrieval.py) | [검색·색인 테스트](tests/test_investigation_retrieval.py), [인덱싱 작업 HTTP 흐름](tests/test_investigation_flow.py) | 벡터 후보, 원문 위치와 버전 |
+| Neo4j · Vector + Graph RAG | [Cypher 경로 검증·확장](src/fivewhys/investigation/retrieval.py) | [동일 질문·정답표](src/fivewhys/evaluation/retrieval_gold.json), [비교 평가](src/fivewhys/evaluation/retrieval_benchmark.py) | 검색 비교, 배포 → 변경 서비스, 서비스 간 의존 경로 |
+| 권한 경계 | [팀 세션·작업 소유권](src/fivewhys/investigation/routes.py), [벡터·그래프 필터](src/fivewhys/investigation/retrieval.py), [모델 입력·출력 검증](src/fivewhys/investigation/analysis.py) | [두 팀의 후보·모델 입력·원문 검증](tests/test_investigation_flow.py) | 주문팀에서 플랫폼팀으로 전환 후 동일 사건 재조사 |
+| RabbitMQ · PostgreSQL · 콜백 | [작업·전송 예약의 원자적 저장](src/fivewhys/investigation/jobs.py), [컨슈머와 복구](src/fivewhys/investigation/worker.py), [테스트 수신기](src/fivewhys/investigation/receiver.py) | [중복·재시작·수신 후 중단](tests/test_jobs_integration.py), [HTTP 재전송 검증](tests/test_investigation_flow.py) | 전송 이력에서 503 → 200, 작업 ID·호출 수 비교 |
+| Docker · pytest · Git · 연동 문서 | [Compose](docker-compose.yml), [CI](.github/workflows/test.yml), [OpenAPI](docs/openapi.json), [수신기 명세](docs/callback-openapi.json) | [브라우저 시연 검사](tests/browser/smoke.py), [기준 실행](docs/verification/baseline/README.md) | 데스크톱·모바일 전체 시연 및 Swagger UI |
+
+화면은 사건 요약·행동을 상단에 두고, 관측 이벤트를 시간순으로 열람하는 방식을 채택했다. 각 판단에서 원문과 관계로 이동할 수 있게 연결했다. [Datadog 사건 상세](https://docs.datadoghq.com/incident_response/incident_management/investigate/) · [Datadog 사건 타임라인](https://docs.datadoghq.com/incident_response/incident_management/investigate/timeline/) · [PagerDuty 사건 상태](https://docs.pagerduty.com/incident-management/incidents/overview)
+
+## 재현
+
+```bash
+# Compose의 실제 데이터베이스·브로커·수신기와 pytest 전체 실행
+docker compose run --build --rm test
+
+# 시드와 정답표 고정, 같은 질문으로 검색 품질·지연 비교
+docker compose exec -T api python -m fivewhys.evaluation.retrieval_benchmark
+
+# 호스트 Chromium으로 두 화면 크기의 실제 조작·캡처
+python -m pip install playwright
+python tests/browser/smoke.py --url http://127.0.0.1:8750 --output ./captures
+```
+
+[측정 조건과 결과](docs/verification/RESULTS.md)
+
+---
+
+## 기존 Five Whys 에이전트
 
 **LLM 에이전트 기반 장애 로그 근본원인분석(RCA) 자동화**
 
@@ -69,7 +124,7 @@ flowchart LR
 ## 빠른 시작
 
 ```bash
-git clone <repo-url> && cd five-whys-agent
+git clone https://github.com/sokldjs554/five-whys-agent.git && cd five-whys-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,mcp]"
 
@@ -100,7 +155,7 @@ pytest
 python examples/mcp_client_demo.py
 
 # Elasticsearch 백엔드 — 같은 질의를 SQLite/ES 두 저장소에 던져 비교
-docker compose up -d && pip install -e ".[es]"
+docker compose up -d elasticsearch && pip install -e ".[es]"
 python examples/es_backend_demo.py
 
 # LLM-as-judge — 규칙 채점 + 인과 사슬 일관성 LLM 판정 (API 키 필요)

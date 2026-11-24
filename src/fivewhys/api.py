@@ -17,6 +17,7 @@ from fivewhys.agent.five_whys import run_five_whys_agent
 from fivewhys.agent.scripted import ScriptedLLM
 from fivewhys.agent.tools import ToolExecutor
 from fivewhys.evaluation.harness import score_report
+from fivewhys.investigation.routes import install
 from fivewhys.models import RCAReport
 from fivewhys.pipeline import build_retriever, build_store
 from fivewhys.scenarios.catalog import SCENARIOS, get_scenario
@@ -41,8 +42,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Five Whys Agent",
         description="LLM 에이전트 기반 장애 로그 근본원인분석(RCA) API",
-        version="0.1.0",
+        version="0.2.0",
     )
+    install(app)
     reports: dict[str, AnalyzeResponse] = {}
 
     @app.get("/scenarios")

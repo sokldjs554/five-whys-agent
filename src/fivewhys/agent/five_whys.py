@@ -16,9 +16,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-
-from pydantic import ValidationError
+from typing import Generic, TypeVar
 
 from fivewhys.agent.llm import LLMClient
 from fivewhys.agent.prompts import SYSTEM_PROMPT, build_incident_brief
@@ -27,9 +27,12 @@ from fivewhys.models import RCAReport
 from fivewhys.scenarios.generator import ScenarioBundle
 
 
+Report = TypeVar("Report")
+
+
 @dataclass
-class AgentResult:
-    report: RCAReport
+class AgentResult(Generic[Report]):
+    report: Report
     n_turns: int
     tool_calls: list[dict] = field(default_factory=list)
 
@@ -43,14 +46,28 @@ def run_five_whys_agent(
     executor: ToolExecutor,
     llm: LLMClient,
     max_turns: int = 24,
-) -> AgentResult:
-    tools = build_tool_definitions()
-    messages: list[dict] = [{"role": "user", "content": build_incident_brief(bundle)}]
+) -> AgentResult[RCAReport]:
+    return run_tool_loop(
+        llm=llm, system=SYSTEM_PROMPT, brief=build_incident_brief(bundle),
+        tools=build_tool_definitions(), execute=executor.execute,
+        submit_tool=SUBMIT_TOOL, validate=RCAReport.model_validate, max_turns=max_turns,
+    )
+
+
+def run_tool_loop(
+    *, llm: LLMClient, system: str, brief: str, tools: list[dict],
+    execute: Callable[[str, dict], tuple[str, bool]], submit_tool: str,
+    validate: Callable[[dict], Report], max_turns: int, max_repairs: int | None = None,
+    submit_separately: bool = False,
+) -> AgentResult[Report]:
+    """Run the shared Messages API dialogue, retaining opaque assistant blocks."""
+    messages: list[dict] = [{"role": "user", "content": brief}]
+    invalid_submissions = 0
     tool_calls: list[dict] = []
     nudges = 0
 
     for turn in range(1, max_turns + 1):
-        response = llm.create(system=SYSTEM_PROMPT, messages=messages, tools=tools)
+        response = llm.create(system=system, messages=messages, tools=tools)
 
         tool_blocks = [b for b in response.content if getattr(b, "type", "") == "tool_use"]
 
@@ -65,7 +82,7 @@ def run_five_whys_agent(
             messages.append(
                 {
                     "role": "user",
-                    "content": "분석을 마쳤다면 submit_root_cause_report 도구로 보고서를 제출하라.",
+                    "content": f"분석을 마쳤다면 {submit_tool} 도구로 보고서를 제출하라.",
                 }
             )
             continue
@@ -74,14 +91,16 @@ def run_five_whys_agent(
         nudges = 0  # 촉구는 '연속' 무도구 턴에만 누적한다
 
         tool_results: list[dict] = []
-        submitted: RCAReport | None = None
+        submitted: Report | None = None
 
         for block in tool_blocks:
             tool_calls.append({"turn": turn, "name": block.name, "input": block.input})
 
-            if block.name == SUBMIT_TOOL:
+            if block.name == submit_tool:
                 try:
-                    submitted = RCAReport.model_validate(block.input)
+                    if submit_separately and len(tool_blocks) != 1:
+                        raise ValueError("검색 결과를 읽은 다음 별도 턴에서 제출하세요.")
+                    submitted = validate(block.input)
                     tool_results.append(
                         {
                             "type": "tool_result",
@@ -89,7 +108,10 @@ def run_five_whys_agent(
                             "content": "보고서가 접수되었습니다.",
                         }
                     )
-                except ValidationError as e:
+                except ValueError as e:
+                    invalid_submissions += 1
+                    if max_repairs is not None and invalid_submissions > max_repairs:
+                        raise AgentError("보고서 검증 오류가 반복되었습니다.") from e
                     tool_results.append(
                         {
                             "type": "tool_result",
@@ -100,7 +122,7 @@ def run_five_whys_agent(
                     )
                 continue
 
-            content, is_error = executor.execute(block.name, block.input)
+            content, is_error = execute(block.name, block.input)
             result: dict = {
                 "type": "tool_result",
                 "tool_use_id": block.id,
