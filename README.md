@@ -12,6 +12,19 @@
          → [과거 유사 장애 RAG] → 5 Whys 보고서 (모든 단계에 로그 id 인용)
 ```
 
+## 공개 데모 · 배포 이후 주문 서비스가 느려진 이유
+
+[**브라우저에서 주문 서비스 장애 조사 열기**](https://sokldjs554.github.io/five-whys-agent/)
+
+“배포 이후 주문 서비스의 응답이 느려졌다. 어떤 변경이 관련돼 있나?”를 조사합니다. 공개 데모는 합성 시나리오 `db_pool_exhaustion`을 팀별로 실행해 저장한 기록을 재생합니다. 로그인이나 API 키 없이 열 수 있습니다. 표시되는 작업 ID, 검색 결과, 콜백 이력은 기록 당시의 값입니다.
+
+1. **주문팀 → 조사 기록 열기**를 누릅니다. 첫 원인 후보에서 `order-service v2.4.0` 배포와 로그 인용을 열고, 타임라인에서 변경 시각과 오류 시각을 대조합니다.
+2. **벡터 검색과 그래프 검색**에서 후보 순위와 선택·제외 이유를 비교합니다. 그래프 경로를 펼쳐 배포가 변경한 서비스를 확인합니다.
+3. **재전송 기록 보기**를 누르면 같은 작업의 콜백이 HTTP 503 이후 200을 받은 이력이 열립니다. 이 규칙 기반 실행의 LLM 호출 수는 재전송 전후 모두 0회입니다.
+4. 상단에서 **플랫폼팀**으로 바꿔 같은 사건을 다시 열고 팀별로 조회된 근거를 비교합니다.
+
+조사 기록을 생성한 확장판에서는 FastAPI가 요청을 접수하고 RabbitMQ 워커가 팀 권한에 따라 Milvus와 Neo4j를 조회합니다. 작업 결과와 콜백 시도는 PostgreSQL에 저장합니다. 아래 빠른 시작은 이 저장소 기본 브랜치의 CLI와 동기 분석 API를 실행합니다. [공개 데모 파일과 팀별 기록](https://github.com/sokldjs554/five-whys-agent/tree/gh-pages)
+
 ## 왜 이 프로젝트인가
 
 문서 요약 챗봇류 프로젝트와 달리, 이 프로젝트는 **"LLM의 결론을 어떻게 신뢰할 것인가"**
@@ -69,7 +82,7 @@ flowchart LR
 ## 빠른 시작
 
 ```bash
-git clone <repo-url> && cd five-whys-agent
+git clone https://github.com/sokldjs554/five-whys-agent.git && cd five-whys-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,mcp]"
 
