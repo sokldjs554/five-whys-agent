@@ -1,6 +1,8 @@
 # 합성 사건의 검색 및 복구 검증
 
-## 실행 결과와 데모에서 확인할 두 장면
+[DB 풀 장애와 인증서 만료의 후속 비교](TWO_CASE_RETRIEVAL.md) · [실제 Claude 조사 상태 및 실행 절차](claude/README.md) · [최신 서비스 통합 CI 실행](https://github.com/sokldjs554/five-whys-agent/actions/workflows/test.yml?query=branch%3Ademo%2Fincident-backend)
+
+## 실행 기준 4d01473의 결과와 데모에서 확인할 두 장면
 
 Compose의 PostgreSQL, RabbitMQ, Milvus, Neo4j 및 HTTP 콜백 수신기를 연결한 pytest 전체 실행에서 **112개 통과, 실패 0, 건너뜀 0**을 기록했다. 36.94초가 걸렸고 Pika 사용 중단 예정 경고가 8건 발생했다. 아래 원본은 데모 실행 기준 `4d01473`에서 수집했다. 공개 백엔드 브랜치와 해당 실행본의 `src/`, `tests/`, Compose 및 Dockerfile 내용이 일치한다. [pytest 콘솔 출력](pytest.log) · [테스트별 JUnit 결과](junit.xml)
 

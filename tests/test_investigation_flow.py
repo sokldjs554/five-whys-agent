@@ -233,7 +233,20 @@ def test_callback_retry_reuses_same_result_and_positive_model_count(
     receipt_db, capture_path = provider_boundary_worker
     with TestClient(create_app()) as client:
         _sign_in(client, "orders")
-        path = _submit(client, "analyses", question=SQL_QUESTION, engine="claude", callback=True)
+        capture = uuid4()
+        with jobs.connect() as db:
+            db.execute("INSERT INTO investigation_observations(capture_id, team) VALUES (%s, 'orders')", (capture,))
+        accepted = client.post("/v1/analyses", json={"question": SQL_QUESTION, "engine": "claude", "callback": True},
+                               headers={"X-Investigation-Observation": str(capture)})
+        job_id = _json(accepted, 202)["id"]
+        path = accepted.headers["location"]
+        assert path == f"/v1/jobs/{job_id}"
+
+        def read_trace():
+            with jobs.connect() as db:
+                return db.execute("SELECT trace FROM investigation_observations WHERE capture_id=%s AND job_id=%s",
+                                  (capture, job_id)).fetchone()["trace"]
+
         before = _wait_job(client, path, "retrying")
         assert [callback["status_code"] for callback in before["callbacks"]] == [503]
         result = _result(client, path)
@@ -242,6 +255,14 @@ def test_callback_retry_reuses_same_result_and_positive_model_count(
         orders_messages = capture_path.read_text(encoding="utf-8").splitlines()
         assert len(orders_messages) == before["llm_calls"]
         assert all(PLATFORM_LOG not in message for message in orders_messages)
+        trace = read_trace()
+        assert len(trace["provider_attempts"]) == before["llm_calls"]
+        assert all(attempt["provider_endpoint"] == "other_or_unknown" for attempt in trace["provider_attempts"])
+        assert {c["name"] for c in trace["tool_calls"]} == {
+            "search_logs", "search_deployments", "search_reports", "submit_investigation",
+        }
+        assert trace["submissions"][-1]["status"] == "accepted"
+        assert PLATFORM_LOG not in repr(trace) and "provider_attempts" not in repr(result)
 
         assert _json(client.post(path + "/callback/retry"), 202)["id"] == before["id"]
         after = _wait_job(client, path, "delivered")
@@ -250,6 +271,7 @@ def test_callback_retry_reuses_same_result_and_positive_model_count(
         assert [callback["status_code"] for callback in after["callbacks"]] == [503, 200]
         assert after["llm_calls"] == before["llm_calls"]
         assert _result(client, path) == result
+        assert read_trace() == trace
         assert capture_path.read_text(encoding="utf-8").splitlines() == orders_messages
         assert client.post(path + "/callback/retry").status_code == 409
 

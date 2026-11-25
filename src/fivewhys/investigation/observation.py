@@ -40,19 +40,27 @@ def _text(value, limit):
     return value if len(value) <= limit else value[:limit] + "…"
 
 
+def _scalar(value, limit):
+    # Keep a malformed scalar at an allowed key so schema failures can be
+    # inspected. Arbitrary nested dictionaries may contain unrelated fields.
+    if value is None or isinstance(value, (bool, int)):
+        return value
+    return _text(value, limit)
+
+
 def _hypotheses(args):
     items = args.get("hypotheses") if isinstance(args, dict) else None
     if not isinstance(items, list):
-        return None
+        return _scalar(items, 2000)
     result = []
     for item in items[:6]:
         if not isinstance(item, dict):
-            result.append(None)
+            result.append(_scalar(item, 2000))
             continue
         ids = item.get("evidence_ids")
         result.append({
-            "title": _text(item.get("title"), 200), "description": _text(item.get("description"), 2000),
-            "evidence_ids": [_text(cid, 128) for cid in ids[:16]] if isinstance(ids, list) else None,
+            "title": _scalar(item.get("title"), 200), "description": _scalar(item.get("description"), 2000),
+            "evidence_ids": [_scalar(cid, 128) for cid in ids[:16]] if isinstance(ids, list) else _scalar(ids, 128),
         })
     return result
 
@@ -78,10 +86,12 @@ class InvestigationObservation:
     tool_calls: list[dict] = field(default_factory=list)
     submissions: list[dict] = field(default_factory=list)
     omitted_tool_calls: int = 0
+    omitted_submissions: int = 0
 
     def as_dict(self):
         return {"provider_attempts": self.provider_attempts, "tool_calls": self.tool_calls,
-                "submissions": self.submissions, "omitted_tool_calls": self.omitted_tool_calls}
+                "submissions": self.submissions, "omitted_tool_calls": self.omitted_tool_calls,
+                "omitted_submissions": self.omitted_submissions}
 
     def _save(self):
         if self.save:
@@ -104,11 +114,14 @@ class InvestigationObservation:
             blocks = (b for b in response.content if getattr(b, "type", "") == "tool_use")
             for index, block in enumerate(blocks):
                 name = block.name
-                if name == "submit_investigation" and len(self.submissions) < 8:
-                    self.submissions.append({
-                        "turn": record["turn"], "index": index, "status": "selected",
-                        "hypotheses": _hypotheses(block.input),
-                    })
+                if name == "submit_investigation":
+                    if len(self.submissions) < 8:
+                        self.submissions.append({
+                            "turn": record["turn"], "index": index, "status": "selected",
+                            "hypotheses": _hypotheses(block.input),
+                        })
+                    else:
+                        self.omitted_submissions += 1
                 if len(self.tool_calls) >= 64:
                     self.omitted_tool_calls += 1
                     continue
