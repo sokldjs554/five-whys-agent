@@ -1,6 +1,6 @@
 # Five Whys Agent
 
-[**공개 데모**](https://sokldjs554.github.io/five-whys-agent/) · [**실제 Claude 조사 · 미실행**](https://sokldjs554.github.io/five-whys-agent/claude.html) · [**백엔드 코드**](https://github.com/sokldjs554/five-whys-agent/tree/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation) · [**통합 테스트**](https://github.com/sokldjs554/five-whys-agent/actions/runs/45582146566)
+[**공개 데모**](https://sokldjs554.github.io/five-whys-agent/) · [**실제 Claude 조사**](https://sokldjs554.github.io/five-whys-agent/claude.html) · [**백엔드 코드**](https://github.com/sokldjs554/five-whys-agent/tree/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation) · [**통합 테스트**](https://github.com/sokldjs554/five-whys-agent/actions/runs/45586350064)
 
 **LLM 에이전트 기반 장애 로그 근본원인분석(RCA) 자동화**
 
@@ -22,6 +22,7 @@
 2. **벡터 검색과 그래프 검색**에서 후보 순위와 선택·제외 이유를 비교합니다. 그래프 경로를 펼쳐 배포가 변경한 서비스를 확인합니다.
 3. **재전송 기록 보기**를 누르면 같은 작업의 콜백이 HTTP 503 이후 200을 받은 이력이 열립니다. 이 규칙 기반 실행의 LLM 호출 수는 재전송 전후 모두 0회입니다.
 4. 상단에서 **플랫폼팀**으로 바꿔 같은 사건을 다시 열고 팀별로 조회된 근거를 비교합니다.
+5. **실제 Claude 조사 기록 보기**에서 모델이 선택한 세 검색어와 반환 원문을 열고, 가장 유력하다고 본 변경과 확인을 유보한 이유를 읽습니다. [저장된 조사 기록](https://sokldjs554.github.io/five-whys-agent/claude.html)
 
 ### 데모 장면에서 코드로
 
@@ -30,7 +31,7 @@
 | 주문팀·플랫폼팀의 근거 차이 | LangChain 검색기가 Milvus에 팀 필터를 적용하고 Neo4j에서 허용된 서비스 관계를 따라간다. 통합 테스트는 플랫폼 전용 슬로우 쿼리의 ID와 원문 경로를 팀별 검색 결과 및 모델 대역 입력에서 대조한다. [검색 구현](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation/retrieval.py) · [후보·경로·원문 접근 테스트](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/tests/test_investigation_flow.py#L94-L127) · [모델 입력 비교](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/tests/test_investigation_flow.py#L278-L286) |
 | 콜백 실패 뒤 같은 작업 재전송 | RabbitMQ 워커가 PostgreSQL에 저장한 결과를 재전송한다. 통합 테스트에서 503 → 200 이후 분석은 1회였고 모델 대역 호출은 3회로 유지됐다. [워커](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation/worker.py) · [작업 저장](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation/jobs.py) · [재전송 전후 비교](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/tests/test_investigation_flow.py#L262-L276) · [DB 실행 횟수 확인](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/tests/test_investigation_flow.py#L288-L302) |
 
-공개 화면은 [Pages 배포본 `3763a55`](https://github.com/sokldjs554/five-whys-agent/tree/3763a55ace8cbc2d92e3f109d66fc3dfe58f7bac)에서 주문팀·플랫폼팀의 기존 Scripted 기록을 재생합니다. 이 기록의 실행 기준은 `4d01473`이고, 해당 실행의 소스와 테스트는 [공개 스냅샷 `2848ab1`](https://github.com/sokldjs554/five-whys-agent/tree/2848ab1e29d44421fdc38f1cbe249d8b65776985)에 있습니다. 실제 Claude 조사는 아직 접수되지 않았습니다. [플랫폼팀 실측 절차·검증 기준](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/docs/verification/claude/README.md)
+공개 화면은 [Pages 배포본 `a19f7a9`](https://github.com/sokldjs554/five-whys-agent/tree/a19f7a9112789bba7f26a3a56103c7ace48da023)에서 주문팀·플랫폼팀의 기존 Scripted 기록을 재생합니다. 이 기록의 실행 기준은 `4d01473`이고, 해당 실행의 소스와 테스트는 [공개 스냅샷 `2848ab1`](https://github.com/sokldjs554/five-whys-agent/tree/2848ab1e29d44421fdc38f1cbe249d8b65776985)에 있습니다. 플랫폼팀의 실제 Claude 조사는 같은 주문 사건에서 배포와 로그 5건을 인용했습니다. 재전송 전후 분석은 1회, Claude 호출은 2회였습니다. [실행 원자료·판독 기록](https://github.com/sokldjs554/five-whys-agent/tree/7db48acd6a6a2b6e1bb4e34f0c5730a523e456ec/docs/verification/claude/runs/e09c4226-20bf-462f-a673-c5dab75a9f7d) · [실제 호출 실행](https://github.com/sokldjs554/five-whys-agent/actions/runs/45585656133)
 
 확장판을 직접 실행하려면 `demo/incident-backend` 브랜치에서 `docker compose up -d --build --wait` 후 `http://127.0.0.1:8750/`을 엽니다. DB 풀 고갈과 인증서 만료의 검색은 [평가 커밋 `a6cde05`](https://github.com/sokldjs554/five-whys-agent/commit/a6cde056aac7a61c82594e7b9af5551c03cbdd6a)에서 문항별 원문 순위와 지연을 측정했습니다. 기본 브랜치의 CLI·동기 API 실행법은 아래 빠른 시작에 있습니다. [확장판 Compose](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/docker-compose.yml) · [두 사건의 측정 결과](https://github.com/sokldjs554/five-whys-agent/blob/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/docs/verification/TWO_CASE_RETRIEVAL.md) · [검증·인계 보고서](docs/verification/incident-update/README.md)
 

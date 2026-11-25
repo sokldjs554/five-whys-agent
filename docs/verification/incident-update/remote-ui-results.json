@@ -14,6 +14,20 @@
     "delivery": "HTTP 503 · 01:48:28 KST\nHTTP 200 · 01:48:28 KST\n\nLLM 호출 · 재전송 전 0회 / 현재 0회"
   },
   {
+    "screen": "desktop",
+    "record": "claude-sonnet-5-5",
+    "job": "e09c4226-20bf-462f-a673-c5dab75a9f7d",
+    "callback": [
+      503,
+      200
+    ],
+    "attempts": [
+      2,
+      2
+    ],
+    "cited_source_opened": true
+  },
+  {
     "screen": "mobile",
     "team": "orders",
     "cited_source_chars": 93,
@@ -26,5 +40,19 @@
     "cited_source_chars": 93,
     "comparison": "그래프 검색에서 근거 1건이 추가되고 2건이 제외됐습니다. 공통 근거 2건.",
     "delivery": "HTTP 503 · 01:48:28 KST\nHTTP 200 · 01:48:28 KST\n\nLLM 호출 · 재전송 전 0회 / 현재 0회"
+  },
+  {
+    "screen": "mobile",
+    "record": "claude-sonnet-5-5",
+    "job": "e09c4226-20bf-462f-a673-c5dab75a9f7d",
+    "callback": [
+      503,
+      200
+    ],
+    "attempts": [
+      2,
+      2
+    ],
+    "cited_source_opened": true
   }
 ]
