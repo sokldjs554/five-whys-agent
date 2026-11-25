@@ -89,3 +89,75 @@ def test_judgments_require_distinct_immutable_ids_even_when_coordinates_collide(
     rows = [{"id": "foreign-version", **same_coordinates}, {"id": "gold", **same_coordinates},
             {"id": "gold", **same_coordinates}]
     assert metrics(rows, {"gold", "other-gold"}) == {"recall": 0.5, "reciprocal_rank": 0.5}
+
+
+def test_certificate_incident_uses_its_own_observations_and_service_permissions():
+    rows = seed_rows(scenario="cert_expiry", seed=17)
+    observations = [r for r in rows if r["origin"] == "scenario"]
+    assert {r["incident"] for r in observations} == {"cert_expiry/seed-17"}
+    assert {r["kind"] for r in observations} == {"log"}
+    assert {r["source"].split("/logs/")[1] for r in observations} == {
+        "api-gateway/proxy-ERROR.log", "user-service/auth-ERROR.log",
+        "user-service/tls-ERROR.log", "payment-service/auth-WARN.log",
+    }
+    assert {r["service"] for r in observations if "orders" in r["teams"]} == {"api-gateway"}
+    assert all("platform" in r["teams"] for r in observations)
+    tls = next(r for r in observations if "/tls-" in r["source"])
+    events = [log for log in get_scenario("cert_expiry", 17).logs if log.component == "tls"]
+    assert tls["observed_at"] == events[0].ts.isoformat()
+    assert tls["text"] == "\n".join(f"{e.ts.isoformat()} ERROR [tls] {e.message}" for e in events[:3])
+    assert {r["id"] for r in rows if r["origin"] != "scenario"} == {
+        r["id"] for r in seed_rows() if r["origin"] != "scenario"
+    }
+
+
+def test_search_filters_match_case_and_seed_in_both_search_modes():
+    shared = _scope("platform", scenario="cert_expiry", seed=17)
+    current = _scope("orders", "log", True, scenario="cert_expiry", seed=17)
+    assert 'payload["incident"] == "cert_expiry/seed-17"' in shared
+    assert 'payload["origin"] != "scenario"' in shared
+    assert 'payload["incident"] == "cert_expiry/seed-17"' in current
+    assert 'payload["origin"] == "scenario"' in current
+    with pytest.raises(ValueError):
+        _scope("orders", scenario='cert_expiry" or true')
+
+
+def test_scripted_tls_claim_requires_observed_expiry_and_cites_downstream_symptoms():
+    from fivewhys.investigation.analysis import _candidates
+
+    gateway = {"id": "gateway", "service": "edge", "text": "Upstream 401 from login-svc POST /login"}
+    token = {"id": "tokens", "service": "login-svc", "text": "Token issuance failed: upstream TLS error"}
+    expired = {"id": "handshake", "service": "login-svc",
+               "text": "SSL handshake failed with auth-provider: certificate expired"}
+    old = {**expired, "title": "Previous TLS incident", "id": "archived"}
+    rows = {"log": [gateway, token], "deployment": [], "report": [old]}
+    assert _candidates(rows) == []
+    rows["log"].append(expired)
+    [candidate] = _candidates(rows)
+    assert "인증서 만료" in candidate["title"] and "login-svc" in candidate["title"]
+    assert set(candidate["evidence_ids"]) == {"handshake", "tokens", "gateway"}
+
+
+def test_case_policy_changes_current_evidence_without_relabeling_shared_documents():
+    from fivewhys.investigation.retrieval_corpus import rows_for_bundle
+
+    bundle = get_scenario("cert_expiry", 17)
+    original = rows_for_bundle(bundle, "cert_expiry/seed-17")
+    bundle.service_teams["api-gateway"] = ("platform",)
+    restricted = rows_for_bundle(bundle, "cert_expiry/seed-17")
+    assert all("orders" not in r["teams"] for r in restricted if r["origin"] == "scenario")
+    assert [r for r in restricted if r["origin"] != "scenario"] == [r for r in original if r["origin"] != "scenario"]
+    assert "orders" in get_scenario("cert_expiry", 17).service_teams["api-gateway"]
+
+
+def test_change_window_uses_the_selected_scenario_baseline():
+    from fivewhys.investigation.retrieval_corpus import rows_for_bundle
+
+    bundle = get_scenario("db_pool_exhaustion", 42)
+    # The order rollout is 40 minutes before incident start. A fixture whose
+    # observation period begins only 20 minutes earlier cannot attribute it.
+    start = bundle.incident[0]
+    bundle.baseline = (start - timedelta(minutes=20), start)
+    rows = rows_for_bundle(bundle, "db_pool_exhaustion/seed-42")
+    assert any(r["kind"] == "log" for r in rows)
+    assert not any(r["kind"] == "deployment" for r in rows)

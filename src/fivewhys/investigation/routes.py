@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .contracts import Receipt, TerminalJob
+from .retrieval_corpus import DEFAULT_SCENARIO, DEFAULT_SEED, incident_key
 
 Team = Literal["orders", "platform"]
 Engine = Literal["scripted", "claude"]
@@ -57,6 +58,14 @@ class InvestigationRequest(Input):
     question: str = Field(min_length=1, max_length=2000)
     engine: Engine = "scripted"
     callback: bool = False
+    scenario: str = DEFAULT_SCENARIO
+    seed: int = Field(default=DEFAULT_SEED, strict=True)
+
+    @field_validator("scenario")
+    @classmethod
+    def known_scenario(cls, value):
+        incident_key(value, DEFAULT_SEED)
+        return value
 
 
 class SourceDocument(Input):
@@ -244,9 +253,22 @@ def set_session(body: DemoSession, request: Request, response: Response) -> Demo
 
 
 @router.post("/analyses", status_code=202, response_model=Accepted, responses=ACCEPT_RESPONSES)
-def analyze(body: InvestigationRequest, team: Caller, response: Response):
+def analyze(
+    body: InvestigationRequest, team: Caller, response: Response,
+    capture_id: Annotated[UUID | None, Header(alias="X-Investigation-Observation",
+        description="운영자가 같은 팀에 사전 등록한 일회용 관찰 ID")] = None,
+):
     if body.engine == "claude" and not config().claude_available:
         raise HTTPException(503, "Claude 엔진의 자격 증명이 설정되지 않았습니다.")
+    if capture_id is not None:
+        if body.engine != "claude":
+            raise HTTPException(409, "관찰 요청에는 Claude 엔진이 필요합니다.")
+        try:
+            key = _job_service("submit", "analysis", body.model_dump(), team, capture_id)
+        except ValueError as exc:
+            raise HTTPException(409, "사용 가능한 관찰 요청을 확인하세요.") from exc
+        response.headers["Location"] = f"/v1/jobs/{key}"
+        return Accepted(id=key)
     return accepted("analysis", body.model_dump(), team, response)
 
 

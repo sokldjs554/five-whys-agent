@@ -208,3 +208,49 @@ def test_crash_after_remote_acceptance_reuses_delivery_key(services, monkeypatch
     assert [c["status_code"] for c in job["callbacks"]] == [503, None, 200]
     assert job["callbacks"][1]["error"]
     assert receipt() == {"attempts": 3, "accepted_at": accepted["accepted_at"]}
+
+
+def test_one_use_capture_bound_to_team_preserves_private_failed_trace(services, monkeypatch):
+    from contextlib import nullcontext
+    from fastapi.testclient import TestClient
+    from fivewhys.api import create_app
+    from fivewhys.agent.llm import LLMResponse, ToolUseBlock
+    from fivewhys.investigation import analysis
+
+    capture = uuid4()
+    with jobs.connect() as db:
+        db.execute("INSERT INTO investigation_observations(capture_id, team) VALUES (%s, %s)", (capture, "orders"))
+    # A provider double drives the ordinary SDK-independent loop; no request leaves the test.
+    class EmptySubmission:
+        def create(self, **kwargs):
+            return LLMResponse(content=[ToolUseBlock("submit", "submit_investigation", {"hypotheses": []})],
+                               model="unit-double", stop_reason="tool_use")
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "local-test")
+    monkeypatch.setenv("FIVEWHYS_DEMO_ACCOUNTS", "1")
+    monkeypatch.setattr(analysis, "_claude_client", lambda: nullcontext(EmptySubmission()))
+    monkeypatch.setattr(analysis, "research", lambda *a, **kw: dict(vector=[], graph=[], paths=[]))
+    client = TestClient(create_app())
+    body = {"engine": "claude", "question": "why?"}
+    headers = {"X-Investigation-Observation": str(capture)}
+    client.post("/v1/demo/session", json={"team": "platform"})
+    assert client.post("/v1/analyses", headers=headers, json=body).status_code == 409
+    client.post("/v1/demo/session", json={"team": "orders"})
+    receipt = client.post("/v1/analyses", headers=headers, json=body)
+    assert receipt.status_code == 202
+    assert client.post("/v1/analyses", headers=headers, json=body).status_code == 409
+    key = receipt.json()["id"]
+
+    worker.handle(json.dumps({"job_id": key, "attempt": 0, "action": "run"}))
+    with jobs.connect() as db:
+        observation = db.execute("SELECT job_id::text, trace FROM investigation_observations WHERE capture_id = %s",
+                                 (capture,)).fetchone()
+        assert db.execute("SELECT count(*) AS n FROM investigation_jobs").fetchone()["n"] == 1
+    assert observation["job_id"] == key
+    trace = observation["trace"]
+    assert [s["reason"] for s in trace["submissions"]] == ["missing_search", "missing_search"]
+    job = client.get(receipt.headers["Location"]).json()
+    assert job["status"] == "failed" and job["error_code"] == "invalid_model_output"
+    assert len(trace["provider_attempts"]) == job["llm_calls"] == 2
+    assert "submissions" not in repr(job) and "unit-double" not in repr(job)
+    assert client.get(receipt.headers["Location"] + "/result").status_code == 409

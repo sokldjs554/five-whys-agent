@@ -46,9 +46,9 @@ def test_neo4j_denies_each_node_and_edge_in_real_multi_hop_query():
             CREATE (seed:Evidence {id:$anchor}), (origin:Service {name:'probe-api'}),
                    (s:Service {name:'probe-db'}), (e:Evidence {id:$target,kind:'deployment',
                     observed_at:'2026-07-03T13:20:00+09:00',incident:$incident}),
-                   (i:Incident {name:$incident,lookback:'2026-07-03T13:00:00+09:00',
+                   (i:Incident {name:$incident,scoped_topology:true,lookback:'2026-07-03T13:00:00+09:00',
                     start:'2026-07-03T14:00:00+09:00',end:'2026-07-03T14:15:00+09:00'}),
-                   (seed)-[ob:OBSERVED_ON]->(origin)-[d:DEPENDS_ON]->(s)<-[ch:CHANGED]-(e),
+                   (seed)-[ob:OBSERVED_ON]->(origin)-[d:DEPENDS_ON {incident:$incident}]->(s)<-[ch:CHANGED]-(e),
                    (i)-[a:AFFECTS]->(s)
             FOREACH(n IN [seed,origin,s,e,i] | SET n.teams=['orders'], n.fixture=$incident)
             FOREACH(r IN [ob,d,ch,a] | SET r.teams=['orders'], r.fixture=$incident)
@@ -63,4 +63,8 @@ def test_neo4j_denies_each_node_and_edge_in_real_multi_hop_query():
                 tx.run(set_acl, key=key, fixture=incident, teams=["platform"]).consume()
                 assert fetch() == []
                 tx.run(set_acl, key=key, fixture=incident, teams=["orders"]).consume()
+        for foreign_incident in (None, incident + "/different"):
+            tx.run("MATCH ()-[d:DEPENDS_ON {fixture:$fixture}]->() SET d.incident=$foreign",
+                   fixture=incident, foreign=foreign_incident).consume()
+            assert fetch() == []
         tx.rollback()

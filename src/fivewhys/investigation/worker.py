@@ -90,7 +90,22 @@ def _run(db, job_id, job):
 
     try:
         if job["kind"] == "analysis":
-            result = investigate(job["payload"], job["team"], count_call)
+            observed = job["payload"].get("engine") == "claude" and db.execute("""
+                SELECT 1 FROM investigation_observations WHERE job_id = %s AND team = %s
+            """, (job_id, job["team"])).fetchone()
+            if observed:
+                from .observation import InvestigationObservation
+
+                def save(trace):
+                    db.execute("""
+                        UPDATE investigation_observations SET trace = %s WHERE job_id = %s AND team = %s
+                    """, (Jsonb(trace), job_id, job["team"]))
+
+                observation = InvestigationObservation(save=save)
+                save(observation.as_dict())
+                result = investigate(job["payload"], job["team"], count_call, observation=observation)
+            else:
+                result = investigate(job["payload"], job["team"], count_call)
         else:
             from .retrieval import index_documents
             result = index_documents(job["payload"]["documents"], job["team"])

@@ -41,6 +41,10 @@ class AgentError(RuntimeError):
     pass
 
 
+class MixedSubmission(ValueError):
+    pass
+
+
 def run_five_whys_agent(
     bundle: ScenarioBundle,
     executor: ToolExecutor,
@@ -59,6 +63,7 @@ def run_tool_loop(
     execute: Callable[[str, dict], tuple[str, bool]], submit_tool: str,
     validate: Callable[[dict], Report], max_turns: int, max_repairs: int | None = None,
     submit_separately: bool = False,
+    observe_result: Callable[[int, int, str, str | Exception | None], None] | None = None,
 ) -> AgentResult[Report]:
     """Run the shared Messages API dialogue, retaining opaque assistant blocks."""
     messages: list[dict] = [{"role": "user", "content": brief}]
@@ -93,13 +98,13 @@ def run_tool_loop(
         tool_results: list[dict] = []
         submitted: Report | None = None
 
-        for block in tool_blocks:
+        for index, block in enumerate(tool_blocks):
             tool_calls.append({"turn": turn, "name": block.name, "input": block.input})
 
             if block.name == submit_tool:
                 try:
                     if submit_separately and len(tool_blocks) != 1:
-                        raise ValueError("검색 결과를 읽은 다음 별도 턴에서 제출하세요.")
+                        raise MixedSubmission("검색 결과를 읽은 다음 별도 턴에서 제출하세요.")
                     submitted = validate(block.input)
                     tool_results.append(
                         {
@@ -108,7 +113,11 @@ def run_tool_loop(
                             "content": "보고서가 접수되었습니다.",
                         }
                     )
-                except ValueError as e:
+                except Exception as e:
+                    if observe_result:
+                        observe_result(turn, index, "rejected", e)
+                    if not isinstance(e, ValueError):
+                        raise
                     invalid_submissions += 1
                     if max_repairs is not None and invalid_submissions > max_repairs:
                         raise AgentError("보고서 검증 오류가 반복되었습니다.") from e
@@ -120,9 +129,19 @@ def run_tool_loop(
                             "is_error": True,
                         }
                     )
+                else:
+                    if observe_result:
+                        observe_result(turn, index, "accepted", None)
                 continue
 
-            content, is_error = execute(block.name, block.input)
+            try:
+                content, is_error = execute(block.name, block.input)
+            except Exception as exc:
+                if observe_result:
+                    observe_result(turn, index, "error", exc)
+                raise
+            if observe_result:
+                observe_result(turn, index, "error" if is_error else "returned", content)
             result: dict = {
                 "type": "tool_result",
                 "tool_use_id": block.id,

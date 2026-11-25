@@ -32,6 +32,14 @@ SERVICES = [
     "redis-cache",
 ]
 
+# Operational access policy, copied into each scenario so a fixture can
+# specify different visibility without changing other incidents or archives.
+DEFAULT_SERVICE_TEAMS = {
+    service: ("orders", "platform") if service in {"api-gateway", "order-service", "redis-cache"}
+    else ("platform",)
+    for service in SERVICES
+}
+
 # 정상 트래픽 로그 패턴 (서비스별)
 _NORMAL: dict[str, list[str]] = {
     "api-gateway": [
@@ -90,6 +98,9 @@ class ScenarioBundle:
     incident: tuple[datetime, datetime]
     ground_truth: GroundTruth
     services: list[str] = field(default_factory=lambda: list(SERVICES))
+    # Fixture topology, independent of the labels used to score RCA hypotheses.
+    dependencies: tuple[tuple[str, str], ...] = ()
+    service_teams: dict[str, tuple[str, ...]] = field(default_factory=DEFAULT_SERVICE_TEAMS.copy)
 
 
 class _Builder:
@@ -190,7 +201,8 @@ class _Builder:
         )
 
     def bundle(
-        self, name: str, title: str, description: str, ground_truth: GroundTruth
+        self, name: str, title: str, description: str, ground_truth: GroundTruth,
+        *, dependencies: tuple[tuple[str, str], ...]
     ) -> ScenarioBundle:
         self.logs.sort(key=lambda r: r.ts)
         self.deploys.sort(key=lambda d: d.ts)
@@ -203,6 +215,7 @@ class _Builder:
             baseline=(self.baseline_start, self.incident_start),
             incident=(self.incident_start, self.incident_end),
             ground_truth=ground_truth,
+            dependencies=dependencies,
         )
 
 
@@ -240,6 +253,7 @@ def build_db_pool_exhaustion(seed: int = 42) -> ScenarioBundle:
         "DB 커넥션 풀 고갈",
         "배포된 비인덱스 쿼리가 slow query를 유발해 커넥션 풀 고갈 → 게이트웨이 504 연쇄",
         gt,
+        dependencies=(("api-gateway", "order-service"), ("order-service", "mysql")),
     )
 
 
@@ -272,6 +286,7 @@ def build_memory_leak(seed: int = 42) -> ScenarioBundle:
         "결제 서비스 메모리 누수(OOM)",
         "신규 배포의 메모리 누수로 GC 악화 → OOM Kill → 결제 API 연쇄 실패",
         gt,
+        dependencies=(("api-gateway", "payment-service"), ("order-service", "payment-service")),
     )
 
 
@@ -303,6 +318,7 @@ def build_disk_full(seed: int = 42) -> ScenarioBundle:
         "디스크 용량 고갈",
         "로그 로테이션 설정 실수로 디스크 100% → 쓰기 실패 → 재고 API 장애",
         gt,
+        dependencies=(("api-gateway", "inventory-service"),),
     )
 
 
@@ -332,6 +348,7 @@ def build_cert_expiry(seed: int = 42) -> ScenarioBundle:
         "TLS 인증서 만료",
         "외부 인증 제공자의 인증서 만료로 로그인 전면 장애",
         gt,
+        dependencies=(("api-gateway", "user-service"), ("payment-service", "user-service")),
     )
 
 
@@ -366,4 +383,6 @@ def build_cache_stampede(seed: int = 42) -> ScenarioBundle:
         "캐시 스탬피드",
         "캐시 노드 재시작 → 캐시 미스 폭증 → DB 과부하 연쇄 장애",
         gt,
+        dependencies=(("api-gateway", "order-service"), ("order-service", "redis-cache"),
+                      ("order-service", "mysql")),
     )

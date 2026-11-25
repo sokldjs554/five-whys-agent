@@ -1,4 +1,4 @@
-"""Versioned evidence from the original deterministic incident and operator uploads."""
+"""Versioned evidence from deterministic incident scenarios and operator uploads."""
 
 from __future__ import annotations
 
@@ -6,15 +6,18 @@ import hashlib
 import json
 import re
 from collections import defaultdict
-from datetime import timedelta
 from pathlib import Path
 
 from fivewhys.rag.chunker import _find_headings
-from fivewhys.scenarios.catalog import get_scenario
+from fivewhys.scenarios.catalog import SCENARIOS, get_scenario
 
 TEAMS = ("orders", "platform")
 KINDS = ("log", "deployment", "report", "runbook")
-INCIDENT = "db_pool_exhaustion/seed-42"
+DEFAULT_SCENARIO = "db_pool_exhaustion"
+DEFAULT_SEED = 42
+INCIDENT = f"{DEFAULT_SCENARIO}/seed-{DEFAULT_SEED}"
+# Archived reports retain their source ACL independently of the active case.
+ORDERS_ARCHIVE_SERVICES = {"order-service", "api-gateway", "redis-cache"}
 REPORT_DIR = Path(__file__).resolve().parents[1] / "data" / "postmortems"
 REPORT_SERVICES = {
     "rollback-failure": "user-service", "bad-config-rollout": "api-gateway",
@@ -119,8 +122,20 @@ def upload_rows(documents, team):
     return rows
 
 
-def seed_rows():
-    bundle = get_scenario("db_pool_exhaustion", seed=42)
+def incident_key(scenario=DEFAULT_SCENARIO, seed=DEFAULT_SEED):
+    if not isinstance(scenario, str) or scenario not in SCENARIOS:
+        raise ValueError("unknown incident scenario")
+    if type(seed) is not int:
+        raise ValueError("scenario seed must be an integer")
+    return f"{scenario}/seed-{seed}"
+
+
+def seed_rows(scenario=DEFAULT_SCENARIO, seed=DEFAULT_SEED):
+    incident = incident_key(scenario, seed)
+    return rows_for_bundle(get_scenario(scenario, seed), incident)
+
+
+def rows_for_bundle(bundle, incident):
     start, end = bundle.incident
     groups = defaultdict(list)
     for entry in bundle.logs:
@@ -128,25 +143,26 @@ def seed_rows():
             groups[(entry.service, entry.component, entry.level)].append(entry)
     rows = []
     for (service, component, level), entries in sorted(groups.items()):
-        teams = ["platform"] if service == "mysql" else TEAMS
+        teams = bundle.service_teams[service]
         text = "\n".join(f"{entry.ts.isoformat()} {level} [{component}] {entry.message}" for entry in entries)
         rows.extend(_document(
-            dict(source=f"scenario/{INCIDENT}/logs/{service}/{component}-{level}.log", kind="log",
+            dict(source=f"scenario/{incident}/logs/{service}/{component}-{level}.log", kind="log",
                  title=f"{service} {component} {level}", text=text, service=service),
-            teams, "scenario", incident=INCIDENT, observed_at=entries[0].ts.isoformat(),
+            teams, "scenario", incident=incident, observed_at=entries[0].ts.isoformat(),
             end_at=entries[-1].ts.isoformat(), representative=True))
-    # Include only changes within the one-hour lookback used for this incident.
+    # Index only the changes observed from baseline start up to incident onset.
     for change in bundle.deploys:
-        if start - timedelta(hours=1) <= change.ts <= start:
+        if bundle.baseline[0] <= change.ts <= start:
             rows.extend(_document(
-                dict(source=f"scenario/{INCIDENT}/changes/{change.service}-{change.ts:%H%M}.txt",
+                dict(source=f"scenario/{incident}/changes/{change.service}-{change.ts:%H%M}.txt",
                      kind="deployment", title=change.description, service=change.service,
                      text=f"{change.ts.isoformat()} {change.kind} {change.description}"),
-                TEAMS, "scenario", incident=INCIDENT, observed_at=change.ts.isoformat(), end_at=change.ts.isoformat()))
+                bundle.service_teams[change.service], "scenario", incident=incident,
+                observed_at=change.ts.isoformat(), end_at=change.ts.isoformat()))
     for file in sorted(REPORT_DIR.glob("*.md")):
         body = file.read_text(encoding="utf-8")
         service = REPORT_SERVICES[file.stem[11:]]
-        teams = TEAMS if service in ("order-service", "api-gateway", "redis-cache") else ["platform"]
+        teams = TEAMS if service in ORDERS_ARCHIVE_SERVICES else ["platform"]
         rows.extend(_document(dict(source="postmortems/" + file.name, kind="report",
                                    title=body.splitlines()[0].lstrip("# "), service=service, text=body), teams, "archive"))
     contrast_file = REPORT_DIR.parent / "investigation" / "cache-restart.md"

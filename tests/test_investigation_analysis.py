@@ -87,9 +87,9 @@ def use_claude(analysis, monkeypatch, turns):
     monkeypatch.setattr(analysis, "_claude_client", lambda: nullcontext(client))
     counted = []
 
-    def run():
+    def run(**kwargs):
         return analysis.investigate({"question": "cart timeout", "engine": "claude"},
-                                    "orders", lambda: counted.append(1))
+                                    "orders", lambda: counted.append(1), **kwargs)
     return run, counted, client
 
 
@@ -229,9 +229,9 @@ def test_claude_messages_request_serializes_only_scoped_tool_results(analysis, m
             turn = submit(["log-9", "dep-7", "rep-3"])
         blocks = [dict(type="tool_use", id=f"tool-{index}", name=name, input=args)
                   for index, (name, args) in enumerate(turn)]
-        return httpx.Response(200, json=dict(
+        return httpx.Response(200, headers={"request-id": f"req-{len(requests)}"}, json=dict(
             id=f"message-{len(requests)}", type="message", role="assistant", content=blocks,
-            stop_reason="tool_use", stop_sequence=None, model=body["model"],
+            stop_reason="tool_use", stop_sequence=None, model="actual-fixture-model",
             usage=dict(input_tokens=50, output_tokens=20),
         ))
 
@@ -239,10 +239,16 @@ def test_claude_messages_request_serializes_only_scoped_tool_results(analysis, m
                              http_client=httpx.Client(transport=httpx.MockTransport(provider))) as sdk:
         monkeypatch.setattr(analysis, "_claude_client", lambda: nullcontext(AnthropicLLM(_client=sdk)))
         counted = []
+        trace = analysis.InvestigationObservation()
         result = analysis.investigate({"question": "cart timeout", "engine": "claude"},
-                                      "orders", lambda: counted.append(1))
+                                      "orders", lambda: counted.append(1), observation=trace)
     assert len(requests) == len(counted) == result["engine_turns"] == 2
     assert len(result["hypotheses"][0]["paths"]) == 3
+    assert [r["message_id"] for r in trace.provider_attempts] == ["message-1", "message-2"]
+    assert [r["request_id"] for r in trace.provider_attempts] == ["req-1", "req-2"]
+    assert {r["model"] for r in trace.provider_attempts} == {"actual-fixture-model"}
+    assert all(r["usage"] == {"input_tokens": 50, "output_tokens": 20} for r in trace.provider_attempts)
+    assert "provider_attempts" not in result
 
 
 def test_scripted_uses_verified_graph_evidence_for_hypotheses(analysis, monkeypatch):
@@ -257,3 +263,62 @@ def test_scripted_uses_verified_graph_evidence_for_hypotheses(analysis, monkeypa
     monkeypatch.setattr(analysis, "research", search)
     result = analysis.investigate({"question": "cart timeout"}, "orders", lambda: None)
     assert all("rep-3" not in h["evidence_ids"] for h in result["hypotheses"])
+
+
+def test_private_trace_keeps_failed_first_submission_and_retry(analysis, monkeypatch):
+    from copy import deepcopy
+
+    def search(question, team, kind=None, **kwargs):
+        matches = result_with_paths([r for r in ROWS if kind is None or r["kind"] == kind])
+        matches["decisions"] = [{"evidence_id": r["id"], "action": "retained", "reason": "graph verified"}
+                                for r in matches["graph"]]
+        return matches
+
+    monkeypatch.setattr(analysis, "research", search)
+    snapshots = []
+    trace = analysis.InvestigationObservation(save=lambda data: snapshots.append(deepcopy(data)))
+    run, paid, _ = use_claude(analysis, monkeypatch, [
+        TimeoutError("provider diagnostics"), search_all(), submit(["unseen-100"]), submit(["log-9"])])
+    result = run(observation=trace)
+    assert len(paid) == 4
+    assert [(r["turn"], r["attempt"], r["status"]) for r in trace.provider_attempts] == [
+        (1, 1, "error"), (1, 2, "returned"), (2, 1, "returned"), (3, 1, "returned")]
+    first, repaired = trace.submissions
+    assert first["hypotheses"] == submit(["unseen-100"])[0][1]["hypotheses"]
+    assert first["status"] == "rejected" and first["reason"] == "unknown_citation"
+    assert repaired["status"] == "accepted"
+    assert repaired["hypotheses"][0]["evidence_ids"] == result["hypotheses"][0]["evidence_ids"] == ["log-9"]
+    assert any(s["submissions"] and s["submissions"][0]["status"] == "selected" for s in snapshots)
+    logs = trace.tool_calls[0]
+    assert logs["query"] == "cart"
+    assert logs["returned"] == [dict(id="log-9", source="test-fixture", locator="log-9", version="test",
+                                     kind="log", service="cart", excerpt="HikariPool connection timed out")]
+    assert logs["retrieval_decisions"] == [dict(evidence_id="log-9", action="retained", reason="graph verified")]
+    assert all(s not in repr(trace.as_dict()) for s in ("restricted-5", "DB-PRIVATE-CANARY", "provider diagnostics"))
+
+
+def test_terminal_failure_preserves_submissions_without_unexpected_fields_or_credentials(analysis, monkeypatch):
+    secret = "opaque-unit-test-credential"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
+    rejected = submit(["unknown"])
+    rejected[0][1]["hypotheses"][0]["description"] = "failed: " + secret
+    rejected[0][1]["extra"] = "opaque-do-not-record"
+    run, _, _ = use_claude(analysis, monkeypatch, [search_all(), rejected, rejected])
+    trace = analysis.InvestigationObservation()
+    with pytest.raises(analysis.InvestigationError, match="검증") as error:
+        run(observation=trace)
+    assert error.value.code == "invalid_model_output"
+    assert [s["reason"] for s in trace.submissions] == ["invalid_schema", "invalid_schema"]
+    assert all(s["hypotheses"][0]["description"] == "failed: [redacted]" for s in trace.submissions)
+    assert all(s not in repr(trace.as_dict()) for s in (secret, "opaque-do-not-record"))
+
+
+def test_mixed_turn_and_insufficient_evidence_remain_distinct(analysis, monkeypatch):
+    empty = [("submit_investigation", {"hypotheses": []})]
+    run, _, _ = use_claude(analysis, monkeypatch, [search_all() + empty, empty])
+    trace = analysis.InvestigationObservation()
+    with pytest.raises(analysis.InvestigationError) as error:
+        run(observation=trace)
+    assert error.value.code == "insufficient_evidence"
+    assert [(s["hypotheses"], s["status"], s["reason"]) for s in trace.submissions] == [
+        ([], "rejected", "mixed_turn"), ([], "rejected", "insufficient_evidence")]

@@ -45,6 +45,12 @@ def _initialize(url):
                 finished_at timestamptz,
                 updated_at timestamptz NOT NULL DEFAULT now()
             );
+            CREATE TABLE IF NOT EXISTS investigation_observations (
+                capture_id uuid PRIMARY KEY,
+                team text NOT NULL,
+                job_id uuid UNIQUE REFERENCES investigation_jobs(id) ON DELETE CASCADE,
+                trace jsonb
+            );
             CREATE TABLE IF NOT EXISTS investigation_outbox (
                 job_id uuid NOT NULL REFERENCES investigation_jobs(id) ON DELETE CASCADE,
                 action text NOT NULL,
@@ -73,7 +79,7 @@ def schedule(db, job_id, action, attempt=0, delay=0):
     """, (job_id, action, attempt, delay))
 
 
-def submit(kind, payload, team):
+def submit(kind, payload, team, capture_id=None):
     if kind not in {"analysis", "index"}:
         raise ValueError("Unknown job kind")
     if not team or not isinstance(payload, dict):
@@ -85,6 +91,15 @@ def submit(kind, payload, team):
             INSERT INTO investigation_jobs(id, team, kind, payload, callback_status)
             VALUES (%s, %s, %s, %s, %s)
         """, (job_id, team, kind, Jsonb(payload), callback_status))
+        if capture_id is not None:
+            if kind != "analysis" or payload.get("engine") != "claude":
+                raise ValueError("capture requires Claude analysis")
+            bound = db.execute("""
+                UPDATE investigation_observations SET job_id = %s
+                WHERE capture_id = %s AND team = %s AND job_id IS NULL RETURNING job_id
+            """, (job_id, capture_id, team)).fetchone()
+            if not bound:
+                raise ValueError("capture unavailable")
         schedule(db, job_id, "run")
     return str(job_id)
 

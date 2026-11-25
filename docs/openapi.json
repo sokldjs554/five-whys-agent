@@ -95,6 +95,25 @@
         ],
         "parameters": [
           {
+            "name": "X-Investigation-Observation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "운영자가 같은 팀에 사전 등록한 일회용 관찰 ID",
+              "title": "X-Investigation-Observation"
+            },
+            "description": "운영자가 같은 팀에 사전 등록한 일회용 관찰 ID"
+          },
+          {
             "name": "X-Expected-Team",
             "in": "header",
             "required": false,
@@ -1348,6 +1367,16 @@
             "type": "boolean",
             "title": "Callback",
             "default": false
+          },
+          "scenario": {
+            "type": "string",
+            "title": "Scenario",
+            "default": "db_pool_exhaustion"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "default": 42
           }
         },
         "additionalProperties": false,

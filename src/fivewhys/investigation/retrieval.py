@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import timedelta
 from functools import lru_cache
 
 from langchain_core.documents import Document
@@ -14,16 +13,16 @@ from langchain_core.retrievers import BaseRetriever
 from neo4j import GraphDatabase
 from pymilvus import DataType, MilvusClient
 
-from fivewhys.investigation.retrieval_corpus import INCIDENT, KINDS, TEAMS, seed_rows, upload_rows, validate_team
+from fivewhys.investigation.retrieval_corpus import (
+    DEFAULT_SCENARIO, DEFAULT_SEED, KINDS, TEAMS,
+    incident_key, rows_for_bundle, upload_rows, validate_team,
+)
 from fivewhys.rag.embedder import HashingEmbedder
-from fivewhys.scenarios.generator import BASELINE_MINUTES, BASE_TIME, INCIDENT_MINUTES
+from fivewhys.scenarios.catalog import get_scenario
 
 TOP_K = 4
 RELATIONS = {"log": "OBSERVED_ON", "deployment": "CHANGED", "report": "DESCRIBES", "runbook": "GUIDES"}
 CAUSAL = re.compile(r"원인|왜|배포|변경|연쇄|롤백|관련|cause|why|deploy|chang|rollout|rollback", re.I)
-START = BASE_TIME + timedelta(minutes=BASELINE_MINUTES)
-END = START + timedelta(minutes=INCIDENT_MINUTES)
-LOOKBACK = START - timedelta(hours=1)
 
 
 class IncidentEmbeddings(Embeddings):
@@ -71,13 +70,16 @@ def _initialize(client, collection, driver):
         driver.execute_query(f"CREATE CONSTRAINT IF NOT EXISTS FOR (n:{label}) REQUIRE n.{field} IS UNIQUE")
 
 
-def _scope(team, kind=None, current_only=False):
+def _scope(team, kind=None, current_only=False, *, scenario=DEFAULT_SCENARIO, seed=DEFAULT_SEED):
     validate_team(team)
     if kind is not None and kind not in KINDS:
         raise ValueError("unknown evidence kind")
     predicate = "allow_" + team + " == true"
+    incident = json.dumps(incident_key(scenario, seed))
     if current_only:
-        predicate += ' and payload["origin"] == "scenario" and payload["incident"] == "' + INCIDENT + '"'
+        predicate += f' and payload["origin"] == "scenario" and payload["incident"] == {incident}'
+    else:
+        predicate += f' and (payload["origin"] != "scenario" or payload["incident"] == {incident})'
     return predicate if kind is None else f'{predicate} and kind == "{kind}"'
 
 
@@ -113,29 +115,36 @@ def _write_rows(rows, client, collection, driver):
         client.upsert(collection, records)
 
 
-def seed_corpus():
+def seed_corpus(scenario=DEFAULT_SCENARIO, seed=DEFAULT_SEED):
+    incident = incident_key(scenario, seed)
+    bundle = get_scenario(scenario, seed)
+    start, end = bundle.incident
+    rows = rows_for_bundle(bundle, incident)
     client, collection, driver = _stores()
     _initialize(client, collection, driver)
-    rows = seed_rows()
     # The fixture's directed service topology is scoped by team. A tenant upload
     # cannot attach itself to a differently scoped Service or create an AFFECTS edge.
     for team in TEAMS:
-        services = ["api-gateway", "order-service"] + (["mysql"] if team == "platform" else [])
+        services = sorted({r["service"] for r in rows if r["origin"] == "scenario"
+                           and r["kind"] == "log" and team in r["teams"]})
         driver.execute_query("""
             MERGE (i:Incident {key:$team + '/' + $incident})
-            SET i.name=$incident, i.teams=[$team], i.start=$start, i.end=$end, i.lookback=$lookback
+            SET i.name=$incident, i.teams=[$team], i.start=$start, i.end=$end, i.lookback=$lookback,
+                i.scoped_topology=true
             WITH i UNWIND $services AS service
             MERGE (s:Service {key:$team + '/' + service}) SET s.name=service, s.teams=[$team]
             MERGE (i)-[a:AFFECTS]->(s) SET a.teams=[$team]
-            """, team=team, incident=INCIDENT, services=services, start=START.isoformat(),
-            end=END.isoformat(), lookback=LOOKBACK.isoformat())
-        for caller, callee in zip(services, services[1:]):
+            """, team=team, incident=incident, services=services, start=start.isoformat(),
+            end=end.isoformat(), lookback=bundle.baseline[0].isoformat())
+        for caller, callee in bundle.dependencies:
+            if caller not in services or callee not in services:
+                continue
             driver.execute_query("""
                 MATCH (caller:Service {key:$caller}), (callee:Service {key:$callee})
-                MERGE (caller)-[r:DEPENDS_ON]->(callee) SET r.teams=[$team]
-                """, caller=f"{team}/{caller}", callee=f"{team}/{callee}", team=team)
+                MERGE (caller)-[r:DEPENDS_ON {incident:$incident}]->(callee) SET r.teams=[$team]
+                """, caller=f"{team}/{caller}", callee=f"{team}/{callee}", team=team, incident=incident)
     _write_rows(rows, client, collection, driver)
-    return {"chunks": len(rows), "incident": INCIDENT, "seed": 42}
+    return {"chunks": len(rows), "incident": incident, "seed": seed}
 
 
 def index_documents(documents, team):
@@ -150,11 +159,14 @@ class MilvusEvidenceRetriever(BaseRetriever):
     team: str
     kind: str | None = None
     current_only: bool = False
+    scenario: str = DEFAULT_SCENARIO
+    seed: int = DEFAULT_SEED
 
     def _get_relevant_documents(self, query, *, run_manager):
         client, collection, _ = _stores()
         hits = client.search(collection, data=[IncidentEmbeddings().embed_query(query)],
-                             filter=_scope(self.team, self.kind, self.current_only), anns_field="vector",
+                             filter=_scope(self.team, self.kind, self.current_only, scenario=self.scenario, seed=self.seed),
+                             anns_field="vector",
                              search_params={"metric_type": "COSINE"}, limit=TOP_K * 8,
                              output_fields=["payload"], consistency_level="Strong")[0]
         ranked = sorted(hits, key=lambda hit: (-hit["distance"], hit["id"]))
@@ -173,11 +185,11 @@ class MilvusEvidenceRetriever(BaseRetriever):
         return docs
 
 
-def vector_search(question, team, kind=None, current_only=False):
-    _scope(team, kind, current_only)
+def vector_search(question, team, kind=None, current_only=False, *, scenario=DEFAULT_SCENARIO, seed=DEFAULT_SEED):
+    _scope(team, kind, current_only, scenario=scenario, seed=seed)
     if not isinstance(question, str) or not question.strip():
         raise ValueError("question must contain text")
-    retriever = MilvusEvidenceRetriever(team=team, kind=kind, current_only=current_only)
+    retriever = MilvusEvidenceRetriever(team=team, kind=kind, current_only=current_only, scenario=scenario, seed=seed)
     return [doc.metadata for doc in retriever.invoke(question)]
 
 
@@ -207,6 +219,8 @@ _EXPAND = f"""
     MATCH (i:Incident)-[a:AFFECTS]->(s)
     WHERE seed.id IN $ids AND seed.id <> e.id AND {_ALLOWED_PATH}
       AND $team IN i.teams AND $team IN a.teams AND i.name=$incident AND e.incident=i.name
+      AND all(r IN relationships(p) WHERE type(r) <> 'DEPENDS_ON' OR r.incident=i.name
+               OR (r.incident IS NULL AND i.scoped_topology IS NULL))
       AND ((e.kind='deployment' AND datetime(e.observed_at) >= datetime(i.lookback)
                                 AND datetime(e.observed_at) <= datetime(i.start))
         OR (e.kind='log' AND datetime(e.observed_at) >= datetime(i.start)
@@ -216,8 +230,8 @@ _EXPAND = f"""
 """
 
 
-def _expand(order, known, paths, client, collection, driver, predicate, team, kind):
-    candidates = driver.execute_query(_EXPAND, ids=order, team=team, incident=INCIDENT).records
+def _expand(order, known, paths, client, collection, driver, predicate, team, kind, incident):
+    candidates = driver.execute_query(_EXPAND, ids=order, team=team, incident=incident).records
     if not candidates:
         return
     ids = sorted({row["evidence_id"] for row in candidates})
@@ -246,14 +260,15 @@ def _expand(order, known, paths, client, collection, driver, predicate, team, ki
         paths[eid] = path
 
 
-def research(question, team, kind=None, current_only=False):
-    predicate = _scope(team, kind, current_only)
-    vector = vector_search(question, team, kind, current_only)
+def research(question, team, kind=None, current_only=False, *, scenario=DEFAULT_SCENARIO, seed=DEFAULT_SEED):
+    incident = incident_key(scenario, seed)
+    predicate = _scope(team, kind, current_only, scenario=scenario, seed=seed)
+    vector = vector_search(question, team, kind, current_only, scenario=scenario, seed=seed)
     client, collection, driver = _stores()
     known = {e["id"]: e for e in vector}
     if not known:
         return {"vector": [], "graph": [], "paths": [], "decisions": []}
-    verified = driver.execute_query(_VERIFY, team=team, ids=list(known), incident=INCIDENT).records
+    verified = driver.execute_query(_VERIFY, team=team, ids=list(known), incident=incident).records
     paths = {row["evidence_id"]: row.data() for row in verified}
     causal = bool(CAUSAL.search(question))
     order = []
@@ -267,7 +282,7 @@ def research(question, team, kind=None, current_only=False):
         else:
             order.append(eid)
     if order and causal and kind in (None, "deployment", "log"):
-        _expand(order, known, paths, client, collection, driver, predicate, team, kind)
+        _expand(order, known, paths, client, collection, driver, predicate, team, kind, incident)
     order = order[:TOP_K]
     decisions = []
     for eid in dict.fromkeys([*(e["id"] for e in vector), *order]):
@@ -285,4 +300,4 @@ def research(question, team, kind=None, current_only=False):
 
 
 if __name__ == "__main__":
-    print(json.dumps(seed_corpus(), ensure_ascii=False))
+    print(json.dumps([seed_corpus(), seed_corpus("cert_expiry")], ensure_ascii=False))

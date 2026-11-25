@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 
 @dataclass
@@ -34,6 +35,15 @@ class LLMResponse:
     content: list[Any]
     stop_reason: str
     model: str = ""
+    message_id: str | None = None
+    request_id: str | None = None
+    usage: dict[str, int] = field(default_factory=dict)
+
+
+class ModelRefusal(RuntimeError):
+    def __init__(self, response: LLMResponse):
+        super().__init__("모델이 요청을 거절했습니다 (safety refusal).")
+        self.response = response
 
 
 class LLMClient(Protocol):
@@ -64,6 +74,13 @@ class AnthropicLLM:
 
             self._client = anthropic.Anthropic()
 
+    @property
+    def provider_endpoint(self) -> str:
+        url = urlsplit(str(getattr(self._client, "base_url", "")))
+        if (url.scheme, url.netloc, url.path.rstrip("/")) == ("https", "api.anthropic.com", ""):
+            return "api.anthropic.com"
+        return "other_or_unknown"
+
     def create(
         self, *, system: str, messages: list[dict], tools: list[dict]
     ) -> LLMResponse:
@@ -74,11 +91,13 @@ class AnthropicLLM:
             messages=messages,
             tools=tools,
         )
-        if resp.stop_reason == "refusal":
-            detail = getattr(resp, "stop_details", None)
-            raise RuntimeError(
-                f"모델이 요청을 거절했습니다 (safety refusal): {detail}"
-            )
-        return LLMResponse(
-            content=list(resp.content), stop_reason=resp.stop_reason, model=resp.model
+        usage = getattr(resp, "usage", None)
+        token_fields = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+        response = LLMResponse(
+            content=list(resp.content), stop_reason=resp.stop_reason, model=resp.model,
+            message_id=getattr(resp, "id", None), request_id=getattr(resp, "_request_id", None),
+            usage={key: getattr(usage, key) for key in token_fields if type(getattr(usage, key, None)) is int},
         )
+        if resp.stop_reason == "refusal":
+            raise ModelRefusal(response)
+        return response
