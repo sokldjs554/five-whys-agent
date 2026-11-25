@@ -1,0 +1,89 @@
+name: Record one Claude investigation
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+concurrency:
+  group: order-platform-claude-capture
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FIVEWHYS_REVISION: b265ee8ee87a0d37720e64bc9451a3dd5aa01d75
+      CALLBACK_RETRY_SECONDS: 180
+    steps:
+      - name: Check repository secret and select an available Claude model
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REQUESTED_MODEL: ${{ vars.FIVEWHYS_MODEL }}
+        run: |
+          python - <<'PY'
+          import http.client
+          import json
+          import os
+          import re
+          from urllib.parse import urlencode
+
+          key = os.environ["ANTHROPIC_API_KEY"]
+          if not key.strip():
+              raise SystemExit("The Actions secret ANTHROPIC_API_KEY is unavailable.")
+          api = http.client.HTTPSConnection("api.anthropic.com", timeout=30)
+          query = {"limit": 100}
+          available = []
+          while True:
+              api.request("GET", "/v1/models?" + urlencode(query),
+                          headers={"anthropic-version": "2023-06-01", "x-api-key": key})
+              response = api.getresponse()
+              if response.status != 200:
+                  raise SystemExit(f"Anthropic model discovery returned HTTP {response.status}. No analysis submitted.")
+              page = json.load(response)
+              available.extend(m["id"] for m in page["data"])
+              if not page.get("has_more"):
+                  break
+              query["after_id"] = page["last_id"]
+          api.close()
+          model = os.environ["REQUESTED_MODEL"] or next((m for m in available if "sonnet" in m), "")
+          if model not in available or not re.fullmatch(r"claude-[a-z0-9.-]+", model):
+              raise SystemExit("Set the Actions variable FIVEWHYS_MODEL to an available Claude model ID.")
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              print("FIVEWHYS_MODEL=" + model, file=env)
+          print("Provider-listed model:", model)
+          PY
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.FIVEWHYS_REVISION }}
+          persist-credentials: false
+      - name: Build the reviewed backend
+        run: docker compose build api
+      - name: Start the isolated investigation stack
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: docker compose up -d --no-build --wait --wait-timeout 300
+      - name: Submit one investigation and retry its callback
+        run: python scripts/record_claude.py --out "$RUNNER_TEMP/claude-record"
+      - name: Verify archive checksums
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -d "$RUNNER_TEMP/claude-record" ]; then
+            cd "$RUNNER_TEMP/claude-record"
+            sha256sum --check SHA256SUMS
+          fi
+      - name: Retain the capture including a rejected first submission
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: order-platform-claude
+          path: ${{ runner.temp }}/claude-record/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Stop services
+        if: always()
+        run: |
+          if [ -f docker-compose.yml ]; then docker compose down --volumes; fi
