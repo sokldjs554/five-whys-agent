@@ -1,0 +1,22 @@
+{
+  "purpose": "Credential preflight for the expanded Claude path; no analysis submitted",
+  "config": {
+    "demo_accounts": true,
+    "claude_available": false,
+    "source_revision": "b265ee8ee87a0d37720e64bc9451a3dd5aa01d75"
+  },
+  "http": {
+    "at": "2026-11-25T09:06:40.379622+00:00",
+    "method": "GET",
+    "path": "/v1/demo/config",
+    "status": 200,
+    "location": null
+  },
+  "outcome": {
+    "at": "2026-11-25T09:06:40.380587+00:00",
+    "job_id": null,
+    "technical_checks_passed": false,
+    "failure": "API의 Claude 인증이 구성되지 않음",
+    "publication": "requires_human_review"
+  }
+}
