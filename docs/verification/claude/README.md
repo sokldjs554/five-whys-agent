@@ -1,6 +1,6 @@
 # 플랫폼팀 Claude 조사 기록
 
-**상태 · 실측 대기.** 이 디렉터리에 검증된 Anthropic 실행 기록은 아직 없다. 아래 명령은 합성 주문 장애를 대상으로 실제 Claude Messages API를 호출한다. 공개 데모의 Scripted 결과와 CI의 모델 대역은 이 실행의 측정값으로 사용하지 않는다.
+**실측 완료.** 플랫폼팀의 주문 지연 사건에서 Claude가 다섯 원문을 인용했습니다. 첫 콜백 503과 재전송 200 사이에 모델 호출은 2회, 분석은 1회로 유지됐습니다. [판독 기록·최종 보고서·원자료](runs/e09c4226-20bf-462f-a673-c5dab75a9f7d/README.md) · [GitHub Actions 실행](https://github.com/sokldjs554/five-whys-agent/actions/runs/45585656133)
 
 > 배포 이후 주문 서비스의 응답이 느려졌다. 어떤 변경이 관련돼 있나?
 
