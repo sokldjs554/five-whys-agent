@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#132e2c">
+  <title>실제 Claude 조사 기록 · Five Whys</title>
+  <link rel="stylesheet" href="./assets/style.css">
+  <style>
+    .record {width: min(100% - 32px, 700px); margin: 32px auto}
+    .record h1 {font-size: clamp(30px, 5vw, 44px)}
+    .record .panel {margin: 20px 0}
+    .record h2 {font-size: 17px; margin-bottom: 4px}
+    .record section + section {margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <main class="record">
+    <a class="source-link" href="./index.html#ask">← 주문 서비스 조사 데모</a>
+    <h1>실제 Claude 조사 기록</h1>
+    <p><strong>미실행</strong> · 이 사건에 대해 Claude에 보낸 요청이나 받은 응답이 아직 없습니다.</p>
+    <div class="panel">
+      <section>
+        <h2>조사 질문</h2>
+        <p class="sub">플랫폼팀 · db_pool_exhaustion · 시드 42</p>
+        <p>배포 이후 주문 서비스의 응답이 느려졌다. 어떤 변경이 관련돼 있나?</p>
+        <p class="sub">확인할 쟁점은 13:20의 customer_ref 조회 조건 변경, 이후의 슬로우 쿼리와 DB 연결 대기가 어디까지 인과관계를 뒷받침하는지입니다.</p>
+      </section>
+      <section>
+        <h2>도구 호출</h2>
+        <p>Claude가 요청한 도구와 반환된 결과를 확인할 실행 기록이 없습니다.</p>
+      </section>
+      <section>
+        <h2>인용한 근거 원문</h2>
+        <p>실행 후 Claude가 인용한 배포와 로그를 같은 시드의 파일·행과 대조합니다. <a href="https://github.com/sokldjs554/five-whys-agent/blob/demo/incident-backend/docs/verification/order-evidence-rubric.md">실행 전 원문 대조 기준</a></p>
+      </section>
+      <section>
+        <h2>최종 판단</h2>
+        <p>Claude가 작성한 원인 가설과 판단 근거는 아직 없습니다.</p>
+      </section>
+      <section>
+        <h2>콜백 전달</h2>
+        <p>작업이 접수되면 같은 ID에서 첫 전송과 재전송의 HTTP 상태, 분석 횟수, 저장 결과 해시, 모델 호출 수를 대조합니다.</p>
+      </section>
+    </div>
+    <p><a class="source-link" href="https://github.com/sokldjs554/five-whys-agent/blob/demo/incident-backend/docs/verification/claude/README.md">실행 절차와 검증 기록 안내 ↗</a> · <a href="https://github.com/sokldjs554/five-whys-agent/tree/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75">수집기 검증 소스 b265ee8</a></p>
+  </main>
+</body>
+</html>
