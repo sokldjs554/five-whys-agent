@@ -44,6 +44,64 @@ def test_demo_session_and_job_visibility(client, monkeypatch):
         assert client.get(f"/v1/jobs/{job_id}{suffix}").status_code == 404
 
 
+def test_running_job_result_returns_409(client, monkeypatch):
+    from fivewhys.investigation import routes
+
+    job_id = str(uuid4())
+
+    def lookup(key, team):
+        if team == "orders" and key == job_id:
+            return {
+                "id": key,
+                "status": "running",
+                "kind": "analysis",
+                "team": team,
+                "result": None,
+                "error": None,
+                "llm_calls": 0,
+                "callbacks": [],
+            }
+
+    monkeypatch.setattr(routes, "lookup_job", lookup)
+    assert client.post("/v1/demo/session", json={"team": "orders"}).status_code == 200
+
+    response = client.get(f"/v1/jobs/{job_id}/result")
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "완료된 결과가 없습니다. 작업 상태와 오류를 확인하세요."
+    }
+
+
+def test_failed_job_result_returns_409(client, monkeypatch):
+    from fivewhys.investigation import routes
+
+    job_id = str(uuid4())
+
+    def lookup(key, team):
+        if team == "orders" and key == job_id:
+            return {
+                "id": key,
+                "status": "failed",
+                "kind": "analysis",
+                "team": team,
+                "result": None,
+                "error": "analysis failed",
+                "llm_calls": 0,
+                "callbacks": [],
+            }
+
+    monkeypatch.setattr(routes, "lookup_job", lookup)
+    assert client.post("/v1/demo/session", json={"team": "orders"}).status_code == 200
+
+    response = client.get(f"/v1/jobs/{job_id}/result")
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "완료된 결과가 없습니다. 작업 상태와 오류를 확인하세요."
+    }
+
+
 def test_disabled_demo_cannot_mint_session(monkeypatch):
     monkeypatch.delenv("FIVEWHYS_DEMO_ACCOUNTS", raising=False)
     client = TestClient(create_app())
