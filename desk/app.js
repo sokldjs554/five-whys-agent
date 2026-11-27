@@ -198,7 +198,7 @@ function addCitations(items) {
     const summary = element("summary");
     summary.append(
       element("span", "cite-no", `근거 ${index + 1}`),
-      element("strong", "", citationKinds[item.id.split(":")[0]] || "원문"),
+      element("strong", "", item.title || citationKinds[item.id.split(":")[0]] || "원문"),
     );
     details.append(
       summary,
@@ -233,7 +233,8 @@ function addTrace(steps) {
     const name = element("span", "tool-detail");
     name.append(element("span", "tool-name", step.tool));
     if (typeof step.input?.query === "string" && step.input.query) {
-      name.append(element("span", "tool-query", step.input.query));
+      const scope = step.input.doc ? `${step.input.doc} · ${step.input.section}` : step.input.query;
+      name.append(element("span", "tool-query", scope));
     }
     const returned =
       step.status === "ok" && Array.isArray(step.output)
@@ -314,6 +315,10 @@ function selectRun(run, mode, focus = false) {
   plan.open = false;
   plan.hidden = !Array.isArray(run.plan) || !run.plan.length;
   byId("plan-input").textContent = plan.hidden ? "" : payload(run.plan);
+  const originalPlan = byId("original-plan");
+  originalPlan.open = false;
+  originalPlan.hidden = !Array.isArray(run.proposed_plan);
+  byId("original-plan-input").textContent = originalPlan.hidden ? "" : payload(run.proposed_plan);
   const planning = byId("plan-metadata");
   planning.replaceChildren();
   const usage = run.model_usage;
