@@ -1,0 +1,60 @@
+{
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "system": "Linux",
+    "machine": "x86_64",
+    "dependencies": {
+      "mcp": "2.3.0",
+      "langgraph": "1.2.24",
+      "numpy": "2.5.5",
+      "pydantic": "2.14.4"
+    },
+    "frozen_inputs_sha256": "84f8e037ea1a6c5708051898ee06fb64f86bdf6e593df96e7261cc39f9a5ffd7",
+    "mode": "local",
+    "split": "development",
+    "repetitions": 3,
+    "implementation_sha256": {
+      "engine.py": "fee5dc7bb92e90a3edf1fc3bfd062b5955b58d955a8fe6e52b6828b374a68856",
+      "evidence.py": "1e3e3911ee5d69ded502c190d228422354986cee3068bfa9df017ec3a66180dc",
+      "local_model.py": "eba74a150d66470faeb7706c4feb49876a87575a4a6a262e987f7a5334218a19",
+      "mcp_tools.py": "00322b3fb21123dcee0f439d360cfa08b8bc1a3a46057a0587401d971ab22ee3"
+    },
+    "started_utc": "2026-11-27T05:39:47.505972+00:00"
+  },
+  "summary": {
+    "cases": 6,
+    "runs": 18,
+    "retrieval_recall_micro": {
+      "found": 6,
+      "expected": 6
+    },
+    "tool_selection": {
+      "success": 15,
+      "total": 15
+    },
+    "tool_execution": {
+      "success": 30,
+      "attempted": 33
+    },
+    "grounded_answer": {
+      "success": 3,
+      "total": 6
+    },
+    "correct_abstention": {
+      "success": 12,
+      "total": 12
+    },
+    "end_to_end": {
+      "success": 15,
+      "total": 18
+    },
+    "failed_runs": {
+      "dev-01": 3
+    },
+    "mixed_outcome_cases": [],
+    "latency_ms_p50": 4805.8,
+    "latency_ms_p95": 9753.2,
+    "actual_local_model_requests": 12,
+    "planner_calls_reported_by_engine": 15
+  }
+}

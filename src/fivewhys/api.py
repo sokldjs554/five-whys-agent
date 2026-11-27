@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from fivewhys.agent.five_whys import run_five_whys_agent
 from fivewhys.agent.scripted import ScriptedLLM
 from fivewhys.agent.tools import ToolExecutor
+from fivewhys.desk.routes import Desk, attach
 from fivewhys.evaluation.harness import score_report
 from fivewhys.models import RCAReport
 from fivewhys.pipeline import build_retriever, build_store
@@ -37,11 +38,13 @@ class AnalyzeResponse(BaseModel):
     scores: dict
 
 
-def create_app() -> FastAPI:
+def create_app(*, desk_db=None, desk_runner=None) -> FastAPI:
+    desk = Desk(desk_db, desk_runner)
     app = FastAPI(
         title="Five Whys Agent",
         description="LLM 에이전트 기반 장애 로그 근본원인분석(RCA) API",
         version="0.1.0",
+        lifespan=desk.lifespan,
     )
     reports: dict[str, AnalyzeResponse] = {}
 
@@ -95,6 +98,7 @@ def create_app() -> FastAPI:
             raise HTTPException(404, "보고서를 찾을 수 없습니다.")
         return reports[report_id]
 
+    attach(app, desk)
     return app
 
 

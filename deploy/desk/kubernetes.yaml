@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fivewhys-desk
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jobs
+  namespace: fivewhys-desk
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: fivewhys-desk
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: desk-cache}
+  template:
+    metadata:
+      labels: {app: desk-cache}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          args: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "48mb", "--maxmemory-policy", "allkeys-lru"]
+          ports:
+            - {name: redis, containerPort: 6379}
+          readinessProbe:
+            exec: {command: ["redis-cli", "ping"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 96Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: fivewhys-desk
+spec:
+  selector: {app: desk-cache}
+  ports:
+    - {port: 6379, targetPort: redis}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: desk
+  namespace: fivewhys-desk
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: desk}
+  template:
+    metadata:
+      labels: {app: desk}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: fivewhys-desk:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - {name: DESK_DB, value: /data/jobs.db}
+            - {name: DESK_REDIS_URL, value: "redis://redis:6379/0"}
+            - {name: DESK_CACHE_TTL, value: "300"}
+            - {name: DESK_CACHE_NAMESPACE, value: "fivewhys:desk:v1"}
+          ports:
+            - {name: http, containerPort: 8000}
+          readinessProbe:
+            httpGet: {path: /desk/config, port: http}
+            periodSeconds: 3
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 768Mi}
+          volumeMounts:
+            - {name: jobs, mountPath: /data}
+      volumes:
+        - name: jobs
+          persistentVolumeClaim: {claimName: jobs}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: desk
+  namespace: fivewhys-desk
+spec:
+  selector: {app: desk}
+  ports:
+    - {name: http, port: 8000, targetPort: http}

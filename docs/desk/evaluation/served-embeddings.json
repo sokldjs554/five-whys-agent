@@ -1,0 +1,705 @@
+{
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "python": "3.12.14",
+  "cpu_quota": "400000 100000",
+  "versions": {
+    "onnxruntime": "1.32.0",
+    "tokenizers": "0.23.3",
+    "numpy": "2.5.5",
+    "langgraph": "1.2.24",
+    "mcp": "1.30.0"
+  },
+  "encoder_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+  "documents": 9,
+  "chunks": 54,
+  "dimension": 384,
+  "insertion_rows": 4096,
+  "insertion_runs": [
+    {
+      "batch_size": 1,
+      "repeat": 1,
+      "elapsed_ms": 591.3149220000378,
+      "top5": [
+        0,
+        3518,
+        2178,
+        1684,
+        3590
+      ]
+    },
+    {
+      "batch_size": 1,
+      "repeat": 2,
+      "elapsed_ms": 405.089141000019,
+      "top5": [
+        0,
+        3518,
+        2178,
+        1684,
+        3590
+      ]
+    },
+    {
+      "batch_size": 1,
+      "repeat": 3,
+      "elapsed_ms": 401.4521270000273,
+      "top5": [
+        0,
+        3518,
+        2178,
+        1684,
+        3590
+      ]
+    },
+    {
+      "batch_size": 32,
+      "repeat": 1,
+      "elapsed_ms": 24.880775000042377,
+      "top5": [
+        0,
+        3518,
+        2178,
+        1684,
+        3590
+      ]
+    },
+    {
+      "batch_size": 32,
+      "repeat": 2,
+      "elapsed_ms": 25.919695000027332,
+      "top5": [
+        0,
+        3518,
+        2178,
+        1684,
+        3590
+      ]
+    },
+    {
+      "batch_size": 32,
+      "repeat": 3,
+      "elapsed_ms": 19.493385000032504,
+      "top5": [
+        0,
+        3518,
+        2178,
+        1684,
+        3590
+      ]
+    }
+  ],
+  "investigations": [
+    {
+      "planner": "rules",
+      "elapsed_ms": 3650.8088190000194,
+      "record": {
+        "question": "주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+        "engine": "langgraph+mcp-stdio/offline",
+        "model_calls": 0,
+        "plan": [
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "HikariPool connection pool 주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+              "k": 4
+            }
+          },
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "HikariPool Connection is not available timed out",
+              "service": "order-service",
+              "limit": 5
+            }
+          },
+          {
+            "tool": "list_change_events",
+            "input": {}
+          }
+        ],
+        "steps": [
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "HikariPool connection pool 주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+              "k": 4
+            },
+            "status": "ok",
+            "output": [
+              {
+                "doc": "2025-11-14-db-connection-pool",
+                "section": "요약",
+                "text": "요약\n2025-11-14 20:12 ~ 20:57 (45분) 동안 주문 조회/생성 API의 오류율이 84%까지 상승했다.\n원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.",
+                "score": 0.03279
+              },
+              {
+                "doc": "2025-11-14-db-connection-pool",
+                "section": "타임라인 (KST)",
+                "text": "타임라인 (KST)\n- 19:40 order-service v1.8.0 배포 (주문 검색 조건 추가)\n- 20:12 mysql slow query 로그 급증 시작 (execution time 10s 이상)\n- 20:16 HikariPool \"Connection is not available, request timed out\" 발생 시작\n- 20:20 api-gateway 504 급증, 장애 선언\n- 20:49 v1.7.9로 롤백 완료\n- 20:57 오류율 정상화",
+                "score": 0.03175
+              },
+              {
+                "doc": "2025-01-17-cache-stampede",
+                "section": "재발 방지 대책",
+                "text": "재발 방지 대책\n- [완료] 캐시 재시작 런북에 사전 워밍 + 점진 트래픽 전환 절차 추가\n- [완료] 캐시 TTL에 지터(jitter) 적용으로 동시 만료 방지\n- [완료] DB max_connections 도달 전 서킷브레이커 동작 검증\n- [진행] 핫키 목록 기반 자동 워밍 스크립트 구축",
+                "score": 0.03041
+              },
+              {
+                "doc": "2025-11-14-db-connection-pool",
+                "section": "영향",
+                "text": "영향\n- 주문 API 5xx 오류율 최대 84%, 추정 매출 손실 약 1,200만 원\n- api-gateway에서 order-service 대상 upstream timeout(504) 연쇄 발생",
+                "score": 0.02808
+              }
+            ]
+          },
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "HikariPool Connection is not available timed out",
+              "service": "order-service",
+              "limit": 5
+            },
+            "status": "ok",
+            "output": [
+              {
+                "id": 1819,
+                "ts": "2026-07-03T14:04:04.520069+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1821,
+                "ts": "2026-07-03T14:04:09.375989+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1823,
+                "ts": "2026-07-03T14:04:14.316118+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1827,
+                "ts": "2026-07-03T14:04:17.803415+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1828,
+                "ts": "2026-07-03T14:04:18.662919+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              }
+            ]
+          },
+          {
+            "tool": "list_change_events",
+            "input": {},
+            "status": "ok",
+            "output": [
+              {
+                "id": 1,
+                "ts": "2026-07-03T11:50:00+09:00",
+                "service": "user-service",
+                "kind": "deploy",
+                "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+              },
+              {
+                "id": 2,
+                "ts": "2026-07-03T13:20:00+09:00",
+                "service": "order-service",
+                "kind": "deploy",
+                "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+              }
+            ]
+          }
+        ],
+        "citations": [
+          {
+            "id": "change:2",
+            "text": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)",
+            "source": "db_pool_exhaustion/deploys · order-service · 2026-07-03T13:20:00+09:00"
+          },
+          {
+            "id": "log:1819",
+            "text": "HikariPool-1 - Connection is not available, request timed out after 30000ms",
+            "source": "db_pool_exhaustion/logs · order-service · 2026-07-03T14:04:04.520069+09:00"
+          },
+          {
+            "id": "doc:2025-11-14-db-connection-pool:6fc2881d21",
+            "text": "요약\n2025-11-14 20:12 ~ 20:57 (45분) 동안 주문 조회/생성 API의 오류율이 84%까지 상승했다.\n원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.",
+            "source": "postmortems/2025-11-14-db-connection-pool.md · 요약"
+          }
+        ],
+        "status": "answered",
+        "reason": "verified",
+        "answer": "13:20의 변경 기록은 “order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)”입니다 [change:2]. 14:04에 주문 서비스가 DB 커넥션을 얻지 못해 요청이 타임아웃됐습니다. [log:1819].\n\n이전 주문 API 장애 보고서의 ‘요약’에는 “길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.”라고 기록돼 있습니다 [doc:2025-11-14-db-connection-pool:6fc2881d21]. 이번 장애에서는 이 배포로 바뀐 쿼리를 우선 원인 후보로 볼 수 있습니다."
+      }
+    },
+    {
+      "planner": "rules",
+      "elapsed_ms": 2386.95360600002,
+      "record": {
+        "question": "Which deployment preceded the order-service HikariPool timeout?",
+        "engine": "langgraph+mcp-stdio/offline",
+        "model_calls": 0,
+        "plan": [
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "HikariPool connection pool Which deployment preceded the order-service HikariPool timeout?",
+              "k": 4
+            }
+          },
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "HikariPool Connection is not available timed out",
+              "service": "order-service",
+              "limit": 5
+            }
+          },
+          {
+            "tool": "list_change_events",
+            "input": {}
+          }
+        ],
+        "steps": [
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "HikariPool connection pool Which deployment preceded the order-service HikariPool timeout?",
+              "k": 4
+            },
+            "status": "ok",
+            "output": [
+              {
+                "doc": "2025-11-14-db-connection-pool",
+                "section": "요약",
+                "text": "요약\n2025-11-14 20:12 ~ 20:57 (45분) 동안 주문 조회/생성 API의 오류율이 84%까지 상승했다.\n원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.",
+                "score": 0.03252
+              },
+              {
+                "doc": "2025-11-14-db-connection-pool",
+                "section": "타임라인 (KST)",
+                "text": "타임라인 (KST)\n- 19:40 order-service v1.8.0 배포 (주문 검색 조건 추가)\n- 20:12 mysql slow query 로그 급증 시작 (execution time 10s 이상)\n- 20:16 HikariPool \"Connection is not available, request timed out\" 발생 시작\n- 20:20 api-gateway 504 급증, 장애 선언\n- 20:49 v1.7.9로 롤백 완료\n- 20:57 오류율 정상화",
+                "score": 0.03252
+              },
+              {
+                "doc": "2024-12-05-dns-resolution",
+                "section": "타임라인 (KST)",
+                "text": "타임라인 (KST)\n- 16:30 payment-service 오토스케일 다운 (노드 4 → 2)\n- 16:40 간헐적 connection timeout 발생 시작\n- 17:20 특정 IP 대상 연결만 실패하는 패턴 확인\n- 17:35 DNS 리졸버 캐시에서 회수된 IP 잔존 확인\n- 17:50 리졸버 캐시 플러시, negative TTL 설정 수정\n- 18:10 오류율 정상화",
+                "score": 0.03126
+              },
+              {
+                "doc": "2025-11-14-db-connection-pool",
+                "section": "영향",
+                "text": "영향\n- 주문 API 5xx 오류율 최대 84%, 추정 매출 손실 약 1,200만 원\n- api-gateway에서 order-service 대상 upstream timeout(504) 연쇄 발생",
+                "score": 0.03126
+              }
+            ]
+          },
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "HikariPool Connection is not available timed out",
+              "service": "order-service",
+              "limit": 5
+            },
+            "status": "ok",
+            "output": [
+              {
+                "id": 1819,
+                "ts": "2026-07-03T14:04:04.520069+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1821,
+                "ts": "2026-07-03T14:04:09.375989+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1823,
+                "ts": "2026-07-03T14:04:14.316118+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1827,
+                "ts": "2026-07-03T14:04:17.803415+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              },
+              {
+                "id": 1828,
+                "ts": "2026-07-03T14:04:18.662919+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "db-pool",
+                "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+              }
+            ]
+          },
+          {
+            "tool": "list_change_events",
+            "input": {},
+            "status": "ok",
+            "output": [
+              {
+                "id": 1,
+                "ts": "2026-07-03T11:50:00+09:00",
+                "service": "user-service",
+                "kind": "deploy",
+                "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+              },
+              {
+                "id": 2,
+                "ts": "2026-07-03T13:20:00+09:00",
+                "service": "order-service",
+                "kind": "deploy",
+                "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+              }
+            ]
+          }
+        ],
+        "citations": [
+          {
+            "id": "change:2",
+            "text": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)",
+            "source": "db_pool_exhaustion/deploys · order-service · 2026-07-03T13:20:00+09:00"
+          },
+          {
+            "id": "log:1819",
+            "text": "HikariPool-1 - Connection is not available, request timed out after 30000ms",
+            "source": "db_pool_exhaustion/logs · order-service · 2026-07-03T14:04:04.520069+09:00"
+          },
+          {
+            "id": "doc:2025-11-14-db-connection-pool:6fc2881d21",
+            "text": "요약\n2025-11-14 20:12 ~ 20:57 (45분) 동안 주문 조회/생성 API의 오류율이 84%까지 상승했다.\n원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.",
+            "source": "postmortems/2025-11-14-db-connection-pool.md · 요약"
+          }
+        ],
+        "status": "answered",
+        "reason": "verified",
+        "answer": "13:20의 변경 기록은 “order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)”입니다 [change:2]. 14:04에 주문 서비스가 DB 커넥션을 얻지 못해 요청이 타임아웃됐습니다. [log:1819].\n\n이전 주문 API 장애 보고서의 ‘요약’에는 “길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.”라고 기록돼 있습니다 [doc:2025-11-14-db-connection-pool:6fc2881d21]. 이번 장애에서는 이 배포로 바뀐 쿼리를 우선 원인 후보로 볼 수 있습니다."
+      }
+    },
+    {
+      "planner": "qwen",
+      "elapsed_ms": 5358.834090000017,
+      "record": {
+        "question": "주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+        "engine": "langgraph+mcp-stdio/model",
+        "model_calls": 1,
+        "plan": [
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "DB connection pool error related to deployment",
+              "limit": 5
+            }
+          },
+          {
+            "tool": "list_change_events",
+            "input": {}
+          },
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "past incidents",
+              "k": 4
+            }
+          }
+        ],
+        "steps": [
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "DB connection pool error related to deployment",
+              "limit": 5
+            },
+            "status": "ok",
+            "output": [
+              {
+                "id": 1838,
+                "ts": "2026-07-03T14:04:30.942266+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "api",
+                "message": "Failed to fetch order ord-32792: SQLTransientConnectionException"
+              },
+              {
+                "id": 1852,
+                "ts": "2026-07-03T14:04:45.098575+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "api",
+                "message": "Failed to fetch order ord-60371: SQLTransientConnectionException"
+              },
+              {
+                "id": 1875,
+                "ts": "2026-07-03T14:05:18.461219+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "api",
+                "message": "Failed to fetch order ord-82327: SQLTransientConnectionException"
+              },
+              {
+                "id": 1881,
+                "ts": "2026-07-03T14:05:26.996248+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "api",
+                "message": "Failed to fetch order ord-55476: SQLTransientConnectionException"
+              },
+              {
+                "id": 1897,
+                "ts": "2026-07-03T14:05:47.068983+09:00",
+                "service": "order-service",
+                "level": "ERROR",
+                "component": "api",
+                "message": "Failed to fetch order ord-47150: SQLTransientConnectionException"
+              }
+            ]
+          },
+          {
+            "tool": "list_change_events",
+            "input": {},
+            "status": "ok",
+            "output": [
+              {
+                "id": 1,
+                "ts": "2026-07-03T11:50:00+09:00",
+                "service": "user-service",
+                "kind": "deploy",
+                "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+              },
+              {
+                "id": 2,
+                "ts": "2026-07-03T13:20:00+09:00",
+                "service": "order-service",
+                "kind": "deploy",
+                "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+              }
+            ]
+          },
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "past incidents",
+              "k": 4
+            },
+            "status": "ok",
+            "output": [
+              {
+                "doc": "2024-10-19-kafka-consumer-lag",
+                "section": "요약",
+                "text": "요약\n2024-10-19 21:00 ~ 23:30 동안 주문/배송 알림이 최대 84분 지연 발송되었다.\n알림 컨슈머의 역직렬화 예외 처리 누락으로 poison message 하나가 파티션 처리를\n반복 실패시키며 consumer lag이 폭증했다.",
+                "score": 0.01639
+              },
+              {
+                "doc": "2025-09-02-payment-oom",
+                "section": "영향",
+                "text": "영향\n- 결제 승인 실패 및 재시도 폭증, 중복 결제 문의 37건\n- payment-service 컨테이너 총 11회 재시작 (exit code 137)",
+                "score": 0.01613
+              },
+              {
+                "doc": "2024-12-05-dns-resolution",
+                "section": "영향",
+                "text": "영향\n- 서비스 간 호출 간헐 실패 (connection timeout), 재시도로 지연 증가\n- 간헐성 때문에 원인 특정까지 55분 소요",
+                "score": 0.01587
+              },
+              {
+                "doc": "2024-10-19-kafka-consumer-lag",
+                "section": "재발 방지 대책",
+                "text": "재발 방지 대책\n- [완료] 스키마 레지스트리 BACKWARD 호환성 검사 활성화\n- [완료] 컨슈머에 DLQ 정책 도입 (3회 실패 시 우회)\n- [완료] consumer lag 임계 알람 (1만 건) 추가\n- [진행] 생산자/컨슈머 배포 순서 가이드 문서화",
+                "score": 0.01562
+              }
+            ]
+          }
+        ],
+        "citations": [],
+        "model_usage": {
+          "model": "qwen2.5-1.5b-instruct",
+          "backend": "llama.cpp",
+          "request_id": "chatcmpl-HXc4OUj16HiC2hYlBLOnn5V8FuaN4mVj",
+          "prompt_tokens": 300,
+          "completion_tokens": 37,
+          "elapsed_ms": 2594.7
+        },
+        "status": "withheld",
+        "reason": "insufficient_evidence",
+        "answer": "현재 로그, 배포 이력, 유사 장애 문서에서 일치하는 근거를 모두 찾지 못해 판단을 보류했습니다."
+      }
+    },
+    {
+      "planner": "qwen",
+      "elapsed_ms": 5001.424814000018,
+      "record": {
+        "question": "Which deployment preceded the order-service HikariPool timeout?",
+        "engine": "langgraph+mcp-stdio/model",
+        "model_calls": 1,
+        "plan": [
+          {
+            "tool": "list_change_events",
+            "input": {}
+          },
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "order-service HikariPool timeout",
+              "limit": 5
+            }
+          },
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "deployment",
+              "k": 4
+            }
+          }
+        ],
+        "steps": [
+          {
+            "tool": "list_change_events",
+            "input": {},
+            "status": "ok",
+            "output": [
+              {
+                "id": 1,
+                "ts": "2026-07-03T11:50:00+09:00",
+                "service": "user-service",
+                "kind": "deploy",
+                "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+              },
+              {
+                "id": 2,
+                "ts": "2026-07-03T13:20:00+09:00",
+                "service": "order-service",
+                "kind": "deploy",
+                "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+              }
+            ]
+          },
+          {
+            "tool": "search_logs",
+            "input": {
+              "query": "order-service HikariPool timeout",
+              "limit": 5
+            },
+            "status": "ok",
+            "output": [
+              {
+                "id": 1913,
+                "ts": "2026-07-03T14:06:12.485571+09:00",
+                "service": "api-gateway",
+                "level": "ERROR",
+                "component": "proxy",
+                "message": "Upstream timeout: order-service GET /orders/ord-59747 exceeded 10000ms, responding 504"
+              },
+              {
+                "id": 1916,
+                "ts": "2026-07-03T14:06:17.745199+09:00",
+                "service": "api-gateway",
+                "level": "ERROR",
+                "component": "proxy",
+                "message": "Upstream timeout: order-service GET /orders/ord-84870 exceeded 10000ms, responding 504"
+              },
+              {
+                "id": 1925,
+                "ts": "2026-07-03T14:06:29.284111+09:00",
+                "service": "api-gateway",
+                "level": "ERROR",
+                "component": "proxy",
+                "message": "Upstream timeout: order-service GET /orders/ord-12472 exceeded 10000ms, responding 504"
+              },
+              {
+                "id": 1932,
+                "ts": "2026-07-03T14:06:35.696528+09:00",
+                "service": "api-gateway",
+                "level": "ERROR",
+                "component": "proxy",
+                "message": "Upstream timeout: order-service GET /orders/ord-58993 exceeded 10000ms, responding 504"
+              },
+              {
+                "id": 1938,
+                "ts": "2026-07-03T14:06:47.752839+09:00",
+                "service": "api-gateway",
+                "level": "ERROR",
+                "component": "proxy",
+                "message": "Upstream timeout: order-service GET /orders/ord-63961 exceeded 10000ms, responding 504"
+              }
+            ]
+          },
+          {
+            "tool": "search_past_incidents",
+            "input": {
+              "query": "deployment",
+              "k": 4
+            },
+            "status": "ok",
+            "output": [
+              {
+                "doc": "2024-05-23-rollback-failure",
+                "section": "재발 방지 대책",
+                "text": "재발 방지 대책\n- [완료] 마지막 안정(stable) 태그 이미지는 보존 정책에서 제외\n- [완료] 배포 파이프라인에 롤백 대상 이미지 존재 사전 검증 추가\n- [진행] 분기 1회 프로덕션 롤백 훈련 정례화",
+                "score": 0.01639
+              },
+              {
+                "doc": "2025-06-21-disk-full-logging",
+                "section": "재발 방지 대책",
+                "text": "재발 방지 대책\n- [완료] 전 서비스 디스크 사용률 80/90% 단계 알람 추가\n- [완료] 로그 로테이션 정책 표준화 (size 기반 + 보존 7일)\n- [진행] 임시 설정 변경 자동 만료(TTL) 도구 도입\n- [진행] 로그 레벨 변경을 배포 이력에 기록해 감사 가능하게 개선",
+                "score": 0.01613
+              },
+              {
+                "doc": "2024-05-23-rollback-failure",
+                "section": "5 Whys",
+                "text": "5 Whys\n1. 왜 프로필 API가 실패했나? — 신규 코드에서 NullPointerException이 발생했다.\n2. 왜 즉시 복구하지 못했나? — 이전 버전으로의 롤백이 실패했다.\n3. 왜 롤백이 실패했나? — 이전 버전 이미지가 레지스트리에 없었다.\n4. 왜 이미지가 없었나? — 보존 정책(최근 3개)이 핫픽스 연속 배포로 이전 안정 버전을 밀어냈다.\n5. 왜 정책 충돌을 몰랐나? — 롤백 훈련이 스테이징에서만 수행되어 프로덕션 정책과 달랐다.",
+                "score": 0.01587
+              },
+              {
+                "doc": "2025-06-21-disk-full-logging",
+                "section": "5 Whys",
+                "text": "5 Whys\n1. 왜 재고 API가 실패했나? — 스냅샷/상태 파일 쓰기가 IOException(disk full)으로 실패했다.\n2. 왜 디스크가 가득 찼나? — 로그 파일이 이틀간 평소의 40배 속도로 누적되었다.\n3. 왜 로그가 폭증했나? — 디버깅용 DEBUG 레벨 설정이 프로덕션에 남아 있었다.\n4. 왜 원복이 누락됐나? — 임시 설정 변경에 만료 시간/추적 절차가 없었다.\n5. 왜 조기 인지가 안 됐나? — 디스크 사용률 임계 알람이 설정되어 있지 않았다.",
+                "score": 0.01562
+              }
+            ]
+          }
+        ],
+        "citations": [],
+        "model_usage": {
+          "model": "qwen2.5-1.5b-instruct",
+          "backend": "llama.cpp",
+          "request_id": "chatcmpl-xrULgrOCVnGwjkHgjsVqFkuTAGRThA9h",
+          "prompt_tokens": 289,
+          "completion_tokens": 39,
+          "elapsed_ms": 2583.2
+        },
+        "status": "withheld",
+        "reason": "insufficient_evidence",
+        "answer": "현재 로그, 배포 이력, 유사 장애 문서에서 일치하는 근거를 모두 찾지 못해 판단을 보류했습니다."
+      }
+    }
+  ]
+}

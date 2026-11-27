@@ -1,0 +1,107 @@
+{
+  "scope": "planner only, real MCP discovery and model inference",
+  "model_revision": "91cad51170dc346986eccefdc2dd33a9da36ead9",
+  "llama_cpp_build": "b7757",
+  "quantization": "Q4_K_M",
+  "runs": [
+    {
+      "question": "Which previous postmortem describes HikariPool connection exhaustion? Start with prior reports.",
+      "calls": [
+        {
+          "tool": "search_past_incidents",
+          "input": {
+            "query": "HikariPool connection exhaustion",
+            "k": 4
+          }
+        },
+        {
+          "tool": "search_logs",
+          "input": {
+            "query": "HikariPool connection exhaustion",
+            "limit": 5
+          }
+        },
+        {
+          "tool": "list_change_events",
+          "input": {}
+        }
+      ],
+      "usage": {
+        "model": "qwen2.5-1.5b-instruct",
+        "backend": "llama.cpp",
+        "request_id": "chatcmpl-C40lT9haiI2RBlSNXJ27EcgJ9EF6uKBC",
+        "prompt_tokens": 295,
+        "completion_tokens": 44,
+        "elapsed_ms": 4141.2
+      }
+    },
+    {
+      "question": "Which previous postmortem describes HikariPool connection exhaustion? Start with prior reports.",
+      "calls": [
+        {
+          "tool": "search_past_incidents",
+          "input": {
+            "query": "HikariPool connection exhaustion",
+            "k": 4
+          }
+        },
+        {
+          "tool": "search_logs",
+          "input": {
+            "query": "HikariPool connection exhaustion",
+            "limit": 5
+          }
+        },
+        {
+          "tool": "list_change_events",
+          "input": {}
+        }
+      ],
+      "usage": {
+        "model": "qwen2.5-1.5b-instruct",
+        "backend": "llama.cpp",
+        "request_id": "chatcmpl-z0IgavzLpmXsa2qfkh8ARV7G653VYbXa",
+        "prompt_tokens": 295,
+        "completion_tokens": 44,
+        "elapsed_ms": 4493.1
+      }
+    },
+    {
+      "question": "Which deployment changed first? Check changes before looking for HikariPool timeouts.",
+      "calls": [
+        {
+          "tool": "list_change_events",
+          "input": {}
+        },
+        {
+          "tool": "search_logs",
+          "input": {
+            "query": "deployment change",
+            "limit": 5
+          }
+        },
+        {
+          "tool": "search_past_incidents",
+          "input": {
+            "query": "HikariPool timeouts",
+            "k": 4
+          }
+        }
+      ],
+      "usage": {
+        "model": "qwen2.5-1.5b-instruct",
+        "backend": "llama.cpp",
+        "request_id": "chatcmpl-i6lU6VKfCyrcJu0yInWizTXjgv6VYrSz",
+        "prompt_tokens": 293,
+        "completion_tokens": 38,
+        "elapsed_ms": 6218.0
+      }
+    }
+  ],
+  "failure_control": {
+    "condition": "connection_refused",
+    "error": "Local model request failed (URLError)",
+    "elapsed_ms": 1.8,
+    "provider_usage": {}
+  }
+}

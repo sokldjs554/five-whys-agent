@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from fivewhys.rag.chunker import Chunk
 from fivewhys.rag.embedder import Embedder
 from fivewhys.rag.vectorstore import VectorStore
 from fivewhys.store.db import LogStore
@@ -50,6 +51,15 @@ class HybridRetriever:
         chunk_id = self._store.add_chunk(doc, section, text)
         self._vectors.add(chunk_id, self._embedder.embed(text))
         return chunk_id
+
+    def index_chunks(self, chunks: list[Chunk]) -> None:
+        for offset in range(0, len(chunks), 32):
+            batch = chunks[offset:offset + 32]
+            texts = [chunk.text for chunk in batch]
+            embed_many = getattr(self._embedder, "embed_many", None)
+            vectors = embed_many(texts) if embed_many else [self._embedder.embed(text) for text in texts]
+            ids = [self._store.add_chunk(chunk.doc, chunk.section, chunk.text) for chunk in batch]
+            self._vectors.add_batch(ids, vectors)
 
     def search(self, query: str, k: int = 5, candidates: int = 20) -> list[RetrievedChunk]:
         bm25_ranking = [

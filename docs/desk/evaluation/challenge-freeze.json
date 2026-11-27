@@ -1,0 +1,7 @@
+{
+  "frozen_utc": "2026-11-27T05:42:03.497301+00:00",
+  "sha256": {
+    "docs/desk/evaluation/challenge.json": "d0c4fa0ba3cb6f8d2952b4557ed0d7f308dce6cb45b55e5ab00b749a3346c2a4"
+  },
+  "provenance": "Prepared after reviewing the initial benchmark. New wording, same seeded incident and original labeling rules."
+}

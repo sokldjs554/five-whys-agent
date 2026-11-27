@@ -1,0 +1,31 @@
+name: Incident desk regression
+on:
+  push:
+    branches: [main, feature/genos-incident-desk]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+    env:
+      DESK_TEST_REDIS_URL: redis://127.0.0.1:6379/15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev,desk-cache]'
+      - run: python -m pytest -o addopts='' -q --junitxml=/tmp/desk-junit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desk-junit
+          path: /tmp/desk-junit.xml

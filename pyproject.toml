@@ -16,10 +16,14 @@ dependencies = [
     "numpy>=1.26",
     "fastapi>=0.110",
     "uvicorn>=0.27",
+    "langgraph==1.2.24",
+    "mcp==1.30.0",
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp>=1.2"]
+desk-encoder = ["onnxruntime>=1.20,<2", "tokenizers>=0.20,<1"]
+desk-cache = ["redis>=5,<7"]
+mcp = ["mcp==1.30.0"]
 es = ["elasticsearch>=8.12"]
 dev = ["pytest>=8", "httpx>=0.27"]
 

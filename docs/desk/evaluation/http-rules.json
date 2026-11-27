@@ -1,0 +1,190 @@
+{
+  "accepted": {
+    "id": "6cf652527fe743708c4d2afb86f2de9c",
+    "status": "queued",
+    "status_url": "/desk/jobs/6cf652527fe743708c4d2afb86f2de9c",
+    "result_url": "/desk/jobs/6cf652527fe743708c4d2afb86f2de9c/result"
+  },
+  "status": {
+    "id": "6cf652527fe743708c4d2afb86f2de9c",
+    "question": "주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+    "engine": "rules",
+    "status": "completed",
+    "created_at": 1795758315.6634061,
+    "started_at": 1795758315.6664627,
+    "finished_at": 1795758317.6054733,
+    "error": null
+  },
+  "states_observed": [
+    "queued",
+    "running",
+    "completed"
+  ],
+  "result": {
+    "question": "주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+    "engine": "langgraph+mcp-stdio/offline",
+    "model_calls": 0,
+    "plan": [
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "HikariPool connection pool 주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+          "k": 4
+        }
+      },
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "HikariPool Connection is not available timed out",
+          "service": "order-service",
+          "limit": 5
+        }
+      },
+      {
+        "tool": "list_change_events",
+        "input": {}
+      }
+    ],
+    "steps": [
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "HikariPool connection pool 주문 서비스의 DB 연결 풀 오류와 관련된 배포를 조사해 줘",
+          "k": 4
+        },
+        "status": "ok",
+        "output": [
+          {
+            "doc": "2025-11-14-db-connection-pool",
+            "section": "요약",
+            "text": "요약\n2025-11-14 20:12 ~ 20:57 (45분) 동안 주문 조회/생성 API의 오류율이 84%까지 상승했다.\n원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.",
+            "score": 0.03279
+          },
+          {
+            "doc": "2025-11-14-db-connection-pool",
+            "section": "타임라인 (KST)",
+            "text": "타임라인 (KST)\n- 19:40 order-service v1.8.0 배포 (주문 검색 조건 추가)\n- 20:12 mysql slow query 로그 급증 시작 (execution time 10s 이상)\n- 20:16 HikariPool \"Connection is not available, request timed out\" 발생 시작\n- 20:20 api-gateway 504 급증, 장애 선언\n- 20:49 v1.7.9로 롤백 완료\n- 20:57 오류율 정상화",
+            "score": 0.03226
+          },
+          {
+            "doc": "2024-12-05-dns-resolution",
+            "section": "영향",
+            "text": "영향\n- 서비스 간 호출 간헐 실패 (connection timeout), 재시도로 지연 증가\n- 간헐성 때문에 원인 특정까지 55분 소요",
+            "score": 0.03058
+          },
+          {
+            "doc": "2025-01-17-cache-stampede",
+            "section": "근본 원인",
+            "text": "근본 원인\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다.",
+            "score": 0.02988
+          }
+        ]
+      },
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "HikariPool Connection is not available timed out",
+          "service": "order-service",
+          "limit": 5
+        },
+        "status": "ok",
+        "output": [
+          {
+            "id": 1819,
+            "ts": "2026-07-03T14:04:04.520069+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1821,
+            "ts": "2026-07-03T14:04:09.375989+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1823,
+            "ts": "2026-07-03T14:04:14.316118+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1827,
+            "ts": "2026-07-03T14:04:17.803415+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1828,
+            "ts": "2026-07-03T14:04:18.662919+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          }
+        ]
+      },
+      {
+        "tool": "list_change_events",
+        "input": {},
+        "status": "ok",
+        "output": [
+          {
+            "id": 1,
+            "ts": "2026-07-03T11:50:00+09:00",
+            "service": "user-service",
+            "kind": "deploy",
+            "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+          },
+          {
+            "id": 2,
+            "ts": "2026-07-03T13:20:00+09:00",
+            "service": "order-service",
+            "kind": "deploy",
+            "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+          }
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "id": "change:2",
+        "text": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)",
+        "source": "db_pool_exhaustion/deploys · order-service · 2026-07-03T13:20:00+09:00"
+      },
+      {
+        "id": "log:1819",
+        "text": "HikariPool-1 - Connection is not available, request timed out after 30000ms",
+        "source": "db_pool_exhaustion/logs · order-service · 2026-07-03T14:04:04.520069+09:00"
+      },
+      {
+        "id": "doc:2025-11-14-db-connection-pool:6fc2881d21",
+        "text": "요약\n2025-11-14 20:12 ~ 20:57 (45분) 동안 주문 조회/생성 API의 오류율이 84%까지 상승했다.\n원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.",
+        "source": "postmortems/2025-11-14-db-connection-pool.md · 요약"
+      }
+    ],
+    "status": "answered",
+    "reason": "verified",
+    "answer": "13:20의 변경 기록은 “order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)”입니다 [change:2]. 14:04에 주문 서비스가 DB 커넥션을 얻지 못해 요청이 타임아웃됐습니다 [log:1819].\n\n이전 주문 API 장애 보고서의 ‘요약’에는 “원인은 당일 배포에 포함된 비인덱스 컬럼 조건의 slow query로, DB 커넥션 점유 시간이\n길어지며 애플리케이션의 HikariPool connection pool이 고갈되었다.”라고 기록돼 있습니다 [doc:2025-11-14-db-connection-pool:6fc2881d21]. 이번 장애에서는 이 배포로 바뀐 쿼리를 우선 원인 후보로 볼 수 있습니다.",
+    "id": "6cf652527fe743708c4d2afb86f2de9c"
+  },
+  "followups": [
+    {
+      "question": "change:2 인용의 출처와 원문을 보여 줘.",
+      "reply": {
+        "id": "change:2",
+        "text": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)",
+        "source": "db_pool_exhaustion/deploys · order-service · 2026-07-03T13:20:00+09:00"
+      },
+      "model_calls": 0
+    }
+  ],
+  "elapsed_ms": 1992.7
+}

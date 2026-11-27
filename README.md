@@ -1,5 +1,9 @@
 # Five Whys Agent
 
+**GenOS 지원 프로젝트 · 주문 서비스 장애 조사 데스크**　[키 없이 공개 데모 열기](https://sokldjs554.github.io/five-whys-agent/desk/) · [구조·실행·검증 자료](docs/desk/README.md) · [공고 대조표](docs/desk/requirements.md)
+
+데스크에서 주문 장애 기록 하나를 열면 실제 Qwen 또는 규칙 계획기의 검색어, 세 도구의 입력·출력, 인용 원문과 보류 이유를 확인할 수 있습니다. 공개 화면은 저장된 실행을 재생합니다. 로컬 API에서는 새 질문을 접수할 수 있습니다.
+
 [**공개 데모**](https://sokldjs554.github.io/five-whys-agent/) · [**실제 Claude 조사**](https://sokldjs554.github.io/five-whys-agent/claude.html) · [**백엔드 코드**](https://github.com/sokldjs554/five-whys-agent/tree/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation) · [**통합 테스트**](https://github.com/sokldjs554/five-whys-agent/actions/runs/45586350064)
 
 **LLM 에이전트 기반 장애 로그 근본원인분석(RCA) 자동화**

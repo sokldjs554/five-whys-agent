@@ -1,0 +1,9 @@
+*
+!README.md
+!pyproject.toml
+!src/
+!src/**
+**/__pycache__/
+**/*.egg-info/
+!desk-demo/
+!desk-demo/**

@@ -1,0 +1,75 @@
+{
+  "observed_utc": "2026-11-27T05:43:50Z",
+  "api_image_id": "sha256:e398ad9c0f01f9de02069f0d35293bd83411b69aa4b2e048f76a7df87f7665ea",
+  "node": {
+    "kubeletVersion": "v1.32.8+k3s1",
+    "containerRuntimeVersion": "containerd://2.0.5-k3s2.32",
+    "kernelVersion": "6.18.57",
+    "architecture": "amd64"
+  },
+  "scope": "Local one-node rootless-Docker K3s. Nested OCI cgroup accounting disabled. Requests through real API Service ClusterIP.",
+  "deployments_after_recovery": {
+    "desk": 1,
+    "redis": 1
+  },
+  "persistent_volume_claim": {
+    "name": "jobs",
+    "phase": "Bound",
+    "capacity": "128Mi",
+    "storage_class": "local-path",
+    "modes": [
+      "ReadWriteOnce"
+    ]
+  },
+  "before": {
+    "id": "b5375c44b9fa4a499efabc0fb6550a49",
+    "states_observed": [
+      "queued",
+      "running",
+      "completed"
+    ],
+    "engine": "langgraph+mcp-stdio/offline",
+    "model_calls": 0,
+    "steps": 3,
+    "citations": 3,
+    "sha256": "1a1f18b49122c17bc3db54d8dc171a1bb0e93bbc11d5b8fd4b28866687f2d367"
+  },
+  "redis_before_outage": {
+    "version": "7.4.12",
+    "keyspace_hits_before": 0,
+    "keyspace_misses_before": 0,
+    "keyspace_hits_after": 1,
+    "keyspace_misses_after": 1,
+    "observed_ttl_seconds": 286,
+    "configured_ttl_seconds": 300
+  },
+  "api_pod_uid_before": "51e5eda1-529e-47ec-b6fb-ffea9bb5a329",
+  "api_pod_uid_after": "f2f4d585-e4e8-4606-83c7-c296804ae00c",
+  "redis_replicas_during_restart": 0,
+  "while_redis_down_after_api_replacement": {
+    "id": "b5375c44b9fa4a499efabc0fb6550a49",
+    "states_observed": [
+      "completed"
+    ],
+    "engine": "langgraph+mcp-stdio/offline",
+    "model_calls": 0,
+    "steps": 3,
+    "citations": 3,
+    "sha256": "1a1f18b49122c17bc3db54d8dc171a1bb0e93bbc11d5b8fd4b28866687f2d367"
+  },
+  "after_redis_replacement": {
+    "id": "b5375c44b9fa4a499efabc0fb6550a49",
+    "states_observed": [
+      "completed"
+    ],
+    "engine": "langgraph+mcp-stdio/offline",
+    "model_calls": 0,
+    "steps": 3,
+    "citations": 3,
+    "sha256": "1a1f18b49122c17bc3db54d8dc171a1bb0e93bbc11d5b8fd4b28866687f2d367"
+  },
+  "replacement_redis_stats": {
+    "keyspace_hits": 1,
+    "keyspace_misses": 1
+  }
+}

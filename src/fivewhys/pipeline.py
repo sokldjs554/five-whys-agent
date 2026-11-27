@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fivewhys.logs.drain import DrainMiner
@@ -9,6 +10,7 @@ from fivewhys.models import LogRecord
 from fivewhys.rag.chunker import chunk_markdown
 from fivewhys.rag.embedder import HashingEmbedder
 from fivewhys.rag.retriever import HybridRetriever
+from fivewhys.rag.served import ServedEmbedder
 from fivewhys.rag.vectorstore import VectorStore
 from fivewhys.scenarios.generator import ScenarioBundle
 from fivewhys.store.db import LogStore
@@ -40,10 +42,15 @@ def build_retriever(
 ) -> HybridRetriever:
     """포스트모템 문서를 청킹→임베딩→색인해 하이브리드 검색기를 만든다."""
     postmortem_dir = postmortem_dir or DEFAULT_POSTMORTEM_DIR
-    embedder = HashingEmbedder(dim=dim)
-    retriever = HybridRetriever(store, embedder, VectorStore(dim=dim))
+    endpoint = os.getenv("DESK_EMBEDDING_URL")
+    embedder = ServedEmbedder(endpoint) if endpoint else HashingEmbedder(dim=dim)
+    retriever = HybridRetriever(store, embedder, VectorStore(dim=embedder.dim))
+    chunks = []
     for path in sorted(postmortem_dir.glob("*.md")):
         text = path.read_text(encoding="utf-8")
-        for chunk in chunk_markdown(path.stem, text):
-            retriever.index_chunk(chunk.doc, chunk.section, chunk.text)
+        chunks.extend(chunk_markdown(path.stem, text))
+        while len(chunks) >= 32:
+            retriever.index_chunks(chunks[:32])
+            del chunks[:32]
+    retriever.index_chunks(chunks)
     return retriever

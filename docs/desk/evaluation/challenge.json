@@ -1,0 +1,211 @@
+[
+  {
+    "id": "challenge-01",
+    "question": "“HikariPool-1 - Connection is not available”가 주문 로그에 찍혔습니다. 최근 배포와 지난 장애 보고서를 대조해 주세요.",
+    "category": "literal_component",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "challenge-02",
+    "question": "Why did api-gateway return 504 while waiting on order-service? Cross-check the upstream timeout with the deployment and the historical pool incident.",
+    "category": "literal_gateway",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "challenge-03",
+    "question": "주문 조회가 한동안 멈췄습니다. 배포와 연결되는지 근거를 모아 설명해 주세요.",
+    "category": "implicit_symptom",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "challenge-04",
+    "question": "After an order-service change, requests began to hang. Which release and precedent support an explanation?",
+    "category": "indirect_english",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "challenge-05",
+    "question": "주문 장애에서 MySQL slow query가 보입니다. 예전 DB 풀 고갈 보고서와 캐시 스탬피드 보고서가 설명하는 원인을 각각 비교해 주세요.",
+    "category": "two_documents",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool",
+      "2025-01-17-cache-stampede"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ],
+      [
+        "캐시",
+        "cache"
+      ],
+      [
+        "스탬피드",
+        "stampede",
+        "동시 만료",
+        "동시만료"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "challenge-06",
+    "question": "주문 DB 커넥션 오류의 유력한 배포 후보를 현재 기록과 대조해 주세요.",
+    "category": "ambiguous_deploy",
+    "fixture": "conflicting_deployments",
+    "expected_status": "withheld",
+    "expected_reason": "conflict",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [],
+    "required_terms": [],
+    "citation_families": []
+  },
+  {
+    "id": "challenge-07",
+    "question": "현재 주문 장애로 정확히 몇 명의 고객이 영향을 받았나요?",
+    "category": "unsupported_count",
+    "fixture": "",
+    "expected_status": "withheld",
+    "expected_reason": "out_of_scope",
+    "required_tools": [],
+    "relevant_docs": [],
+    "required_terms": [],
+    "citation_families": []
+  }
+]

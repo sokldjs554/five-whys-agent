@@ -12,9 +12,16 @@ class VectorStore:
         self._matrix = np.zeros((0, dim), dtype=np.float32)
 
     def add(self, chunk_id: int, vector: list[float]) -> None:
-        arr = np.asarray(vector, dtype=np.float32).reshape(1, self.dim)
-        self._matrix = np.vstack([self._matrix, arr])
-        self._ids.append(chunk_id)
+        self.add_batch([chunk_id], [vector])
+
+    def add_batch(self, chunk_ids: list[int], vectors: list[list[float]]) -> None:
+        if not chunk_ids and not len(vectors):
+            return
+        matrix = np.asarray(vectors, dtype=np.float32)
+        if matrix.shape != (len(chunk_ids), self.dim):
+            raise ValueError("Vector IDs and dimensions must align")
+        self._matrix = np.vstack([self._matrix, matrix])
+        self._ids.extend(chunk_ids)
 
     def search(self, query_vector: list[float], k: int = 10) -> list[tuple[int, float]]:
         if not self._ids:

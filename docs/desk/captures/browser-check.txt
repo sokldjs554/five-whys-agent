@@ -1,0 +1,7 @@
+Archive SHA-256 aa033e8409d0c0679cd4067c19b2a84af19bd5b7be8865a9ab4e3a68c7ea3317
+Chromium 156.0.8078.79 records 7 initial record dev-01
+PASS desktop real record, trace, citation navigation, search/filter, withheld
+PASS five viewport widths, long tool output, Escape
+PASS loading, archive failure/retry and empty archive
+PASS local HTTP POST/queue/poll/result and evidence 79518778e91c469593def67174d4be44
+PASS live Qwen planner, separate job, model identity, 3 actual tool calls

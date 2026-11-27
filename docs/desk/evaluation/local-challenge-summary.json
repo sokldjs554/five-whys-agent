@@ -1,0 +1,68 @@
+{
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "system": "Linux",
+    "machine": "x86_64",
+    "dependencies": {
+      "mcp": "1.30.0",
+      "langgraph": "1.2.24",
+      "numpy": "2.5.5",
+      "pydantic": "2.14.4"
+    },
+    "frozen_inputs_sha256": "84f8e037ea1a6c5708051898ee06fb64f86bdf6e593df96e7261cc39f9a5ffd7",
+    "mode": "local",
+    "split": "challenge",
+    "repetitions": 3,
+    "planner_version": "v2",
+    "embedding_mode": "hashing",
+    "split_definition_sha256": "d0c4fa0ba3cb6f8d2952b4557ed0d7f308dce6cb45b55e5ab00b749a3346c2a4",
+    "implementation_sha256": {
+      "engine.py": "cff6e1da7a0f0d4d5c8090b98a5259a0c5805a8739393e53f80d0dc938467b0f",
+      "evidence.py": "993d83f8a3659d11cd2b90b94b3922a0f6841e399334e912ae047555f0f9310e",
+      "local_model.py": "77e578cc32faad3262b6f9823b3175ec6ba95ef5934c0eb8af6e03824c8d9e18",
+      "mcp_tools.py": "5c5be81b6184708ca5ca370b02eb6ab8796425b12373a4cfdf896c8ed0766304",
+      "vocabulary.py": "8bb1c93aa5214f2ff2d5bb00e7a177f4f686bd7e746a28d26d3bd1803fb6ed22"
+    },
+    "started_utc": "2026-11-27T05:47:07.802531+00:00"
+  },
+  "summary": {
+    "cases": 7,
+    "runs": 21,
+    "retrieval_recall_micro": {
+      "found": 9,
+      "expected": 18
+    },
+    "tool_selection": {
+      "success": 18,
+      "total": 21
+    },
+    "tool_execution": {
+      "success": 45,
+      "attempted": 45
+    },
+    "grounded_answer": {
+      "success": 6,
+      "total": 15
+    },
+    "correct_abstention": {
+      "success": 6,
+      "total": 6
+    },
+    "end_to_end": {
+      "success": 12,
+      "total": 21
+    },
+    "failed_runs": {
+      "challenge-02": 3,
+      "challenge-04": 3,
+      "challenge-05": 3
+    },
+    "mixed_outcome_cases": [],
+    "latency_ms_p50": 2393.3,
+    "latency_ms_p95": 6684.0,
+    "actual_local_model_requests": 15,
+    "prompt_tokens": 4917,
+    "completion_tokens": 528,
+    "planner_calls_reported_by_engine": 15
+  }
+}

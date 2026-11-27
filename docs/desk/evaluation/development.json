@@ -1,0 +1,126 @@
+[
+  {
+    "id": "dev-01",
+    "question": "주문 장애 원인을 현재 로그와 배포 기록, 과거 커넥션 풀 보고서로 설명해 주세요.",
+    "category": "multi_source",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "dev-02",
+    "question": "Which deployment is linked to the order-service pool timeout? Compare current evidence with the historical postmortem.",
+    "category": "english_positive",
+    "fixture": "",
+    "expected_status": "answered",
+    "expected_reason": "verified",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [
+      "2025-11-14-db-connection-pool"
+    ],
+    "required_terms": [
+      [
+        "v2.4.0"
+      ],
+      [
+        "hikaripool",
+        "connection pool",
+        "커넥션 풀",
+        "커넥션풀",
+        "연결 풀",
+        "연결풀"
+      ]
+    ],
+    "citation_families": [
+      "log",
+      "change",
+      "doc"
+    ]
+  },
+  {
+    "id": "dev-03",
+    "question": "이번 주문 장애 때문에 정확히 얼마의 매출을 잃었나요?",
+    "category": "unsupported_metric",
+    "fixture": "",
+    "expected_status": "withheld",
+    "expected_reason": "out_of_scope",
+    "required_tools": [],
+    "relevant_docs": [],
+    "required_terms": [],
+    "citation_families": []
+  },
+  {
+    "id": "dev-04",
+    "question": "주문 API의 커넥션 풀 장애 원인을 근거와 함께 설명해 주세요.",
+    "category": "empty_logs",
+    "fixture": "empty_logs",
+    "expected_status": "withheld",
+    "expected_reason": "insufficient_evidence",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [],
+    "required_terms": [],
+    "citation_families": []
+  },
+  {
+    "id": "dev-05",
+    "question": "주문 장애의 원인과 유사 사례를 찾아주세요.",
+    "category": "invalid_arguments",
+    "fixture": "invalid_arguments",
+    "expected_status": "withheld",
+    "expected_reason": "invalid_plan",
+    "required_tools": null,
+    "relevant_docs": [],
+    "required_terms": [],
+    "citation_families": []
+  },
+  {
+    "id": "dev-06",
+    "question": "주문 장애를 설명할 배포와 로그, 유사 장애 자료가 있나요?",
+    "category": "tool_timeout",
+    "fixture": "tool_timeout",
+    "expected_status": "withheld",
+    "expected_reason": "timeout",
+    "required_tools": [
+      "search_logs",
+      "list_change_events",
+      "search_past_incidents"
+    ],
+    "relevant_docs": [],
+    "required_terms": [],
+    "citation_families": []
+  }
+]
