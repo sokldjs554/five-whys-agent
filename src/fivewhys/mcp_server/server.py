@@ -83,9 +83,10 @@ def create_server(scenario: str = "db_pool_exhaustion", seed: int = 42) -> FastM
         return _run("list_change_events")
 
     @mcp.tool()
-    def search_past_incidents(query: str, k: int = 4) -> str:
+    def search_past_incidents(query: str, k: int = 4, doc: str | None = None,
+                              section: str | None = None) -> str:
         """과거 장애 보고서(포스트모템)를 하이브리드 검색(BM25+벡터+RRF)한다."""
-        return _run("search_past_incidents", query=query, k=k)
+        return _run("search_past_incidents", query=query, k=k, doc=doc, section=section)
 
     @mcp.tool()
     def get_incident_info() -> str:

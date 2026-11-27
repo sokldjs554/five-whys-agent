@@ -242,20 +242,25 @@ class LogStore:
         rows = self._conn.execute("SELECT * FROM deploys ORDER BY epoch")
         return [dict(r) for r in rows]
 
-    def search_chunks(self, query: str, limit: int = 20) -> list[dict]:
+    def search_chunks(self, query: str, limit: int = 20, *, doc: str | None = None,
+                      section: str | None = None) -> list[dict]:
         match = _fts_query(query)
         if not match:
             return []
         rows = self._conn.execute(
             "SELECT c.id, c.doc, c.section, c.text, bm25(chunks_fts) AS rank"
             " FROM chunks_fts f JOIN chunks c ON c.id = f.rowid"
-            " WHERE chunks_fts MATCH ? ORDER BY rank LIMIT ?",
-            (match, limit),
+            " WHERE chunks_fts MATCH ? AND (? IS NULL OR c.doc = ?)"
+            " AND (? IS NULL OR c.section = ?) ORDER BY rank LIMIT ?",
+            (match, doc, doc, section, section, limit),
         )
         return [dict(r) for r in rows]
 
-    def all_chunks(self) -> list[dict]:
-        rows = self._conn.execute("SELECT id, doc, section, text FROM chunks ORDER BY id")
+    def all_chunks(self, *, doc: str | None = None, section: str | None = None) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT id, doc, section, text FROM chunks WHERE (? IS NULL OR doc = ?)"
+            " AND (? IS NULL OR section = ?) ORDER BY id", (doc, doc, section, section)
+        )
         return [dict(r) for r in rows]
 
     def close(self) -> None:

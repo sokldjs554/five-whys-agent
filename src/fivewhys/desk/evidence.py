@@ -36,14 +36,28 @@ _SERVICE = re.compile(r"\b[a-z]+(?:-[a-z]+)*-service\b", re.I)
 _VERSION = re.compile(r"v\d+\.\d+(?:\.\d+)?", re.I)
 
 
+def unsupported_current_subject(question: str) -> bool:
+    return bool(_UNSUPPORTED.search(question) or
+                any(name.lower() != "order-service" for name in _SERVICE.findall(question)))
+
+
 def in_scope(question: str) -> bool:
     if not isinstance(question, str) or not 0 < len(question.strip()) <= 800:
         return False
     return bool(
         _SUBJECT.search(question) and _INTENT.search(question)
-        and not _UNSUPPORTED.search(question) and not _MULTI_REPORT.search(question)
-        and all(name.lower() == "order-service" for name in _SERVICE.findall(question))
+        and not unsupported_current_subject(question) and not _MULTI_REPORT.search(question)
     )
+
+
+def current_log_query(question):
+    lower = question.lower()
+    log_args = {"query": "HikariPool Connection is not available timed out", "service": "order-service"}
+    if "504" in lower or "게이트웨이" in lower or "gateway" in lower:
+        log_args = {"query": "Upstream timeout responding 504", "service": "api-gateway"}
+    elif "customer_ref" in lower or "슬로우" in lower or "slow query" in lower:
+        log_args = {"query": "slow query customer_ref", "service": "mysql"}
+    return {**log_args, "limit": 5}
 
 
 def timestamp(row):
@@ -113,11 +127,9 @@ def historical_quote(doc, log, deployment):
     return None
 
 
-def verify(steps, question: str = ""):
-    data = {step["tool"]: step["output"] for step in steps}
+def current_evidence(data, question):
     changes = unique_records(data["list_change_events"], lambda r: r["id"])
     logs = unique_records(data["search_logs"], lambda r: r["id"])
-    docs = unique_records(data["search_past_incidents"], lambda r: (r["doc"], r["section"], r["text"]))
     deployments = [
         row for row in changes
         if row["service"] == "order-service" and row["kind"] == "deploy"
@@ -134,23 +146,34 @@ def verify(steps, question: str = ""):
     if requested_versions - available_versions:
         raise DeskError("out_of_scope")
     log, symptom = match
-    historical = next(((d, quote) for d in docs
-                       if (quote := historical_quote(d, log, deployment))), None)
-    if not historical:
-        raise DeskError("insufficient_evidence")
-    doc, quote = historical
-    ref = hashlib.sha256(doc["text"].encode()).hexdigest()[:10]
     citations = [
         {"id": f"change:{deployment['id']}", "text": deployment["description"],
          "source": f"db_pool_exhaustion/deploys · {deployment['service']} · {deployment['ts']}"},
         {"id": f"log:{log['id']}", "text": log["message"],
          "source": f"db_pool_exhaustion/logs · {log['service']} · {log['ts']}"},
-        {"id": f"doc:{doc['doc']}:{ref}", "text": doc["text"],
-         "source": f"postmortems/{doc['doc']}.md · {doc['section']}"},
     ]
     observation = (f"{timestamp(deployment):%H:%M}의 변경 기록은 "
                    f"“{deployment['description']}”입니다 [{citations[0]['id']}]. "
                    f"{timestamp(log):%H:%M}에 {symptom.removesuffix('.')} [{citations[1]['id']}].")
+    return deployment, log, observation, citations
+
+
+def document_citation(doc):
+    ref = hashlib.sha256(doc["text"].encode()).hexdigest()[:10]
+    return {"id": f"doc:{doc['doc']}:{ref}", "text": doc["text"],
+            "source": f"postmortems/{doc['doc']}.md · {doc['section']}"}
+
+
+def verify(steps, question: str = ""):
+    data = {step["tool"]: step["output"] for step in steps}
+    deployment, log, observation, citations = current_evidence(data, question)
+    docs = unique_records(data["search_past_incidents"], lambda r: (r["doc"], r["section"], r["text"]))
+    historical = next(((d, quote) for d in docs
+                       if (quote := historical_quote(d, log, deployment))), None)
+    if not historical:
+        raise DeskError("insufficient_evidence")
+    doc, quote = historical
+    citations.append(document_citation(doc))
     answer = (f"{observation}\n\n유사 장애 보고서의 ‘{doc['section']}’에는 "
               f"“{quote}”라고 기록돼 있습니다 [{citations[2]['id']}]. "
               "이번 장애에서는 이 배포로 바뀐 쿼리를 우선 원인 후보로 볼 수 있습니다.")

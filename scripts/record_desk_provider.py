@@ -1,4 +1,4 @@
-"""Record two one-call investigations using fixed development questions."""
+"""Record two one-call investigations on a selected frozen question set."""
 import asyncio
 import os
 import sys
@@ -9,12 +9,24 @@ from fivewhys.desk.engine import investigate
 from fivewhys.desk.openai_planner import OpenAIPlanner
 
 
-async def record(out, provider, create_planner):
+def suite_cases(suite):
+    if suite == "development":
+        selections = [("development", "dev-01"), ("development", "dev-02")]
+    elif suite == "comparison":
+        selections = [("heldout", "hold-03"), ("challenge", "challenge-05")]
+    else:
+        raise ValueError("Unrecognized question set")
+    return [
+        next(case for case in read(DATA / f"{split}.json") if case["id"] == case_id)
+        for split, case_id in selections
+    ]
+
+
+async def record(out, provider, create_planner, suite):
     validate_freeze()
-    cases = read(DATA / "development.json")
-    result = {"provider":provider, "commit":os.getenv("GITHUB_SHA"), "actions_run_id":os.getenv("GITHUB_RUN_ID"), "runs":[]}
-    for case_id in ("dev-01", "dev-02"):
-        case = next(c for c in cases if c["id"] == case_id)
+    result = {"provider":provider, "suite":suite, "commit":os.getenv("GITHUB_SHA"), "actions_run_id":os.getenv("GITHUB_RUN_ID"), "runs":[]}
+    for case in suite_cases(suite):
+        case_id = case["id"]
         planner = create_planner()
         run = await investigate(case["question"], planner=planner, timeout_seconds=55)
         graded = score(case, run)
@@ -29,11 +41,11 @@ async def record(out, provider, create_planner):
         raise SystemExit("Missing completed provider response")
 
 
-async def main(out, provider):
+async def main(out, provider, suite="development"):
     if provider == "openai":
         if not os.getenv("OPENAI_API_KEY", "").strip():
             raise SystemExit("Missing GitHub Actions secret OPENAI_API_KEY")
-        return await record(out, provider, OpenAIPlanner)
+        return await record(out, provider, OpenAIPlanner, suite)
     if provider != "claude":
         raise ValueError("Unknown provider")
     import anthropic
@@ -47,8 +59,8 @@ async def main(out, provider):
             model = await available_model(client)
         except anthropic.APIStatusError as exc:
             raise SystemExit(f"Model discovery rejected: HTTP {exc.status_code}") from None
-        await record(out, provider, lambda: ClaudePlanner(client, model))
+        await record(out, provider, lambda: ClaudePlanner(client, model), suite)
 
 
 if __name__ == "__main__":
-    asyncio.run(main(Path(sys.argv[2]), sys.argv[1]))
+    asyncio.run(main(Path(sys.argv[2]), sys.argv[1], *sys.argv[3:]))

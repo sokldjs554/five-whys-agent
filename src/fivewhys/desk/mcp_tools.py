@@ -14,9 +14,10 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
 
 class DeskError(Exception):
-    def __init__(self, reason: str):
+    def __init__(self, reason: str, detail: str = ""):
         super().__init__(reason)
         self.reason = reason
+        self.detail = detail
 
 
 class StrictRecord(BaseModel):
@@ -31,6 +32,11 @@ PositiveID = Annotated[int, Field(gt=0)]
 class PastQuery(StrictRecord):
     query: Query
     k: int = Field(default=4, ge=1, le=8)
+
+
+class ScopedPastQuery(PastQuery):
+    doc: Text
+    section: Literal["근본 원인"]
 
 
 class LogQuery(StrictRecord):

@@ -266,8 +266,9 @@ class ToolExecutor:
             r.pop("epoch", None)
         return rows
 
-    def _tool_search_past_incidents(self, query: str, k: int = 4) -> list[dict]:
-        chunks = self.retriever.search(query, k=k)
+    def _tool_search_past_incidents(self, query: str, k: int = 4,
+                                    doc: str | None = None, section: str | None = None) -> list[dict]:
+        chunks = self.retriever.search(query, k=k, doc=doc, section=section)
         return [
             {"doc": c.doc, "section": c.section, "text": c.text, "score": c.score}
             for c in chunks

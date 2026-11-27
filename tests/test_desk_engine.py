@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 import json
+import re
 
 import pytest
 
@@ -147,3 +148,75 @@ def test_shared_keyword_cannot_confirm_historical_match(passage):
     result = run(_result_hook=lambda name, rows:
                  [{**DOC, "text": "요약\n" + passage}] if name == "search_past_incidents" else rows)
     assert result["reason"] == "insufficient_evidence"
+
+
+def compare(question, **kwargs):
+    return asyncio.run(investigate(question, **kwargs))
+
+
+def test_colloquial_korean_named_comparison():
+    result = compare("주문 서비스 DB 연결 풀 고갈 보고서와 로그 디스크 고갈 보고서는 뭐가 달라?")
+    assert result["status"] == "answered" and len(result["citations"]) == 2
+
+
+def test_two_archival_causes_live_stdio_without_current():
+    result = compare("How do the Kafka consumer lag and TLS certificate expiry incident reports differ?")
+    assert result["reason"] == "verified"
+    assert len(result["plan"]) == 2 and len(result["proposed_plan"]) == 3
+    assert all(c["tool"] == "search_past_incidents" for c in result["plan"])
+    assert len({c["input"]["doc"] for c in result["plan"]}) == 2
+    assert all(c["title"] and c["text"].startswith("근본 원인\n") for c in result["citations"])
+    assert all(re.split(r"(?<=[.!?])\s+", c["text"].partition("\n")[2])[0] in result["answer"]
+               for c in result["citations"])
+
+
+def test_current_and_archives_keep_separate_evidence_scopes():
+    async def provider(question, tools):
+        plan = await offline_plan(question, tools)
+        plan[1]["input"] = {"query": "redis cache stampede", "limit": 5}
+        return plan
+
+    result = compare("현재 주문 장애와 함께 커넥션 풀 보고서와 캐시 스탬피드 보고서의 근본 원인을 비교해 줘.", planner=provider)
+    assert result["reason"] == "verified"
+    assert result["model_calls"] == 1
+    assert len(result["steps"]) == 4 and len(result["citations"]) == 4
+    assert result["proposed_plan"][1]["input"]["query"] == "redis cache stampede"
+    log = next(s for s in result["steps"] if s["tool"] == "search_logs")
+    assert log["input"]["service"] == "order-service"
+    assert "redis" not in log["input"]["query"]
+
+
+def test_compare_missing_named_report_withholds():
+    result = compare("Compare the rollback failure report and the unlisted satellite outage report.")
+    assert result["reason"] == "insufficient_evidence"
+    assert result["steps"] == []
+
+
+@pytest.mark.parametrize(("fault", "reason"), [
+    ("missing", "insufficient_evidence"), ("duplicate", "conflict"), ("swapped", "conflict"),
+])
+def test_two_report_attribution_fails_closed(fault, reason):
+    def hook(name, rows):
+        if name == "search_past_incidents" and "dns" in rows[0]["doc"]:
+            if fault == "missing":
+                return []
+            if fault == "duplicate":
+                return rows + rows
+            return [{**rows[0], "doc": "a-different-report"}]
+        return rows
+    result = compare("Compare the DNS resolution and disk full logging reports", _result_hook=hook)
+    assert result["reason"] == reason
+    assert result["citations"] == []
+
+
+def test_observed_symptom_and_named_reports_include_live_evidence():
+    result = compare("주문 장애에서 MySQL slow query가 관측됐어요. 캐시 스탬피드와 DB 커넥션 풀 문서의 원인을 대조해 줘.")
+    assert result["reason"] == "verified"
+    assert "두 장애 모두 DB 커넥션 고갈" in result["answer"]
+    assert len(result["steps"]) == 4
+    assert result["citations"][-1]["source"].startswith("db_pool_exhaustion/logs · mysql")
+
+
+def test_live_observation_from_another_service_cannot_be_substituted():
+    result = compare("Compare the DNS and disk full reports to the current billing-service incident.")
+    assert result["reason"] == "out_of_scope" and result["steps"] == []

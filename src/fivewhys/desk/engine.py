@@ -7,7 +7,8 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from fivewhys.desk.evidence import in_scope, verify
+from fivewhys.desk.comparison import compare_evidence, expand_plan, resolve_comparison
+from fivewhys.desk.evidence import current_log_query, in_scope, verify
 from fivewhys.desk.mcp_tools import DeskError, desk_session, discover, read_rows, validate_plan
 
 MESSAGES = {
@@ -24,15 +25,9 @@ MESSAGES = {
 
 async def offline_plan(question: str, tools: list[dict]) -> list[dict]:
     """Deterministic query routing, also usable as a no-model evaluation baseline."""
-    lower = question.lower()
-    log_args = {"query": "HikariPool Connection is not available timed out", "service": "order-service"}
-    if "504" in lower or "게이트웨이" in lower or "gateway" in lower:
-        log_args = {"query": "Upstream timeout responding 504", "service": "api-gateway"}
-    elif "customer_ref" in lower or "슬로우" in lower or "slow query" in lower:
-        log_args = {"query": "slow query customer_ref", "service": "mysql"}
     return [
         {"tool": "search_past_incidents", "input": {"query": "HikariPool connection pool " + question[:150], "k": 4}},
-        {"tool": "search_logs", "input": {**log_args, "limit": 5}},
+        {"tool": "search_logs", "input": current_log_query(question)},
         {"tool": "list_change_events", "input": {}},
     ]
 
@@ -45,13 +40,16 @@ class Investigation(TypedDict, total=False):
     citations: list[dict]
 
 
-def graph_for(session, specs, question, planner, result_hook, trace):
+def graph_for(session, specs, question, planner, result_hook, trace, comparison):
     async def plan(_state):
         if planner is not None:
             trace["model_calls"] += 1
         try:
             raw = await (planner or offline_plan)(question, specs)
             calls = validate_plan(raw)
+            if comparison:
+                trace["proposed_plan"] = calls
+                calls = expand_plan(calls, comparison)
         except (asyncio.TimeoutError, TimeoutError):
             return {"reason": "timeout"}
         except DeskError as error:
@@ -86,7 +84,10 @@ def graph_for(session, specs, question, planner, result_hook, trace):
 
     def decide(state):
         try:
-            answer, citations = verify(state["steps"], question)
+            if comparison:
+                answer, citations = compare_evidence(state["steps"], question, comparison)
+            else:
+                answer, citations = verify(state["steps"], question)
             return {"reason": "verified", "answer": answer, "citations": citations}
         except DeskError as error:
             return {"reason": error.reason}
@@ -124,11 +125,21 @@ async def investigate(question: str, *, planner=None, session_factory=None,
         # Enter and leave MCP's AnyIO task groups in the same task.
         async with (session_factory or desk_session)() as session:
             specs = await discover(session)
-            graph = graph_for(session, specs, question, planner, _result_hook, trace)
+            graph = graph_for(session, specs, question, planner, _result_hook, trace, comparison)
             return await graph.ainvoke({"steps": []}, config={"recursion_limit": 8})
 
     reason = "out_of_scope"
-    if in_scope(question):
+    detail = ""
+    comparison = None
+    can_run = False
+    if isinstance(question, str) and 0 < len(question.strip()) <= 800:
+        try:
+            comparison = resolve_comparison(question)
+            can_run = bool(comparison) or in_scope(question)
+        except DeskError as error:
+            reason = error.reason
+            detail = error.detail
+    if can_run:
         try:
             state = await asyncio.wait_for(run(), timeout_seconds)
         except (asyncio.TimeoutError, TimeoutError):
@@ -145,4 +156,4 @@ async def investigate(question: str, *, planner=None, session_factory=None,
     for step in trace["steps"]:
         if step["status"] == "running":
             step["status"] = reason
-    return {**trace, "status": "withheld", "reason": reason, "answer": MESSAGES[reason]}
+    return {**trace, "status": "withheld", "reason": reason, "answer": detail or MESSAGES[reason]}

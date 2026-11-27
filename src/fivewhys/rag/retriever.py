@@ -61,18 +61,20 @@ class HybridRetriever:
             ids = [self._store.add_chunk(chunk.doc, chunk.section, chunk.text) for chunk in batch]
             self._vectors.add_batch(ids, vectors)
 
-    def search(self, query: str, k: int = 5, candidates: int = 20) -> list[RetrievedChunk]:
+    def search(self, query: str, k: int = 5, candidates: int = 20, *,
+               doc: str | None = None, section: str | None = None) -> list[RetrievedChunk]:
+        chunk_by_id = {c["id"]: c for c in self._store.all_chunks(doc=doc, section=section)}
+        allowed_ids = set(chunk_by_id) if doc is not None or section is not None else None
         bm25_ranking = [
-            r["id"] for r in self._store.search_chunks(query, limit=candidates)
+            r["id"] for r in self._store.search_chunks(query, limit=candidates, doc=doc, section=section)
         ]
         vec_ranking = [
             cid
-            for cid, _ in self._vectors.search(self._embedder.embed(query), k=candidates)
+            for cid, _ in self._vectors.search(self._embedder.embed(query), k=candidates, allowed_ids=allowed_ids)
         ]
         fused = rrf_fuse([bm25_ranking, vec_ranking], top_k=k)
 
         results: list[RetrievedChunk] = []
-        chunk_by_id = {c["id"]: c for c in self._store.all_chunks()}
         for chunk_id, score in fused:
             c = chunk_by_id.get(chunk_id)
             if c:
