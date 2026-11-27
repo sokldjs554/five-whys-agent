@@ -1,0 +1,2 @@
+record	Call Claude and verify the resulting MCP evidence	2026-11-27T07:36:57.1326992Z hold-03 HTTP 200 None answered verified MCP calls 4
+record	Call Claude and verify the resulting MCP evidence	2026-11-27T07:37:00.8764312Z challenge-05 HTTP 200 None answered verified MCP calls 4

@@ -2,7 +2,9 @@
 
 **GenOS 지원 프로젝트 · 주문 서비스 장애 조사 데스크**　[키 없이 공개 데모 열기](https://sokldjs554.github.io/five-whys-agent/desk/) · [구조·실행·검증 자료](docs/desk/README.md) · [공고 대조표](docs/desk/requirements.md)
 
-데스크에서 주문 장애 기록 하나를 열면 실제 Qwen 또는 규칙 계획기의 검색어, 세 도구의 입력·출력, 인용 원문과 보류 이유를 확인할 수 있습니다. 공개 화면은 저장된 실행을 재생합니다. 로컬 API에서는 새 질문을 접수할 수 있습니다.
+두 장애 보고서의 원인이 어떻게 다른지, 어느 쪽이 현재 주문 장애의 로그·배포와 일치하는지 조사합니다. 공개 화면에는 Claude·Qwen·규칙 계획기로 만든 기록 11건이 있습니다. 결론 옆 인용을 누르면 원문이 열리고, 호출 기록에서는 모델이 제안한 계획과 실제 도구 입력·결과를 대조할 수 있습니다. 새 질문은 로컬 API에서 실행합니다. [Claude 비교 사례](https://sokldjs554.github.io/five-whys-agent/desk/?run=claude-hold-03) · [보류 사례](https://sokldjs554.github.io/five-whys-agent/desk/?run=hold-05) · [최종 점검과 남은 한계](docs/desk/audit.md)
+
+아래는 같은 저장소에서 앞서 개발한 5 Whys 조사기와 팀별 조회 데모입니다.
 
 [**공개 데모**](https://sokldjs554.github.io/five-whys-agent/) · [**실제 Claude 조사**](https://sokldjs554.github.io/five-whys-agent/claude.html) · [**백엔드 코드**](https://github.com/sokldjs554/five-whys-agent/tree/b265ee8ee87a0d37720e64bc9451a3dd5aa01d75/src/fivewhys/investigation) · [**통합 테스트**](https://github.com/sokldjs554/five-whys-agent/actions/runs/45586350064)
 

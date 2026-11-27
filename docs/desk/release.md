@@ -1,5 +1,7 @@
 # 데모 배포와 검증 버전
 
+[최종 회귀 수정·평가·공개 파일 대조](audit.md)
+
 ## 두 보고서 비교 배포
 
 근본 원인 구절 두 개를 독립적으로 검색·검증하는 버전은 [`3b2f3ee`](https://github.com/sokldjs554/five-whys-agent/tree/3b2f3eeffe19454a11e6fd393b57fbd4eab0470c)이다. Redis를 포함한 CI에서 테스트 131개가 통과했다. 공개 재생본은 [`b4a6df1`](https://github.com/sokldjs554/five-whys-agent/tree/b4a6df16480be6491372812a7c8b6fd5c5ece516/desk)이며 첫 버전의 보류 기록과 개선 뒤의 성공 기록을 모두 포함한다. [회귀 테스트](https://github.com/sokldjs554/five-whys-agent/actions/runs/45957281724) · [비교 화면](https://sokldjs554.github.io/five-whys-agent/desk/?run=claude-hold-03) · [실행 기록과 비교 평가](evaluation/comparison/) · [PC 화면](captures/comparison-1440.png) · [모바일 화면](captures/comparison-390.png)
