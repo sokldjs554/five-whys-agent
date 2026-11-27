@@ -1,0 +1,33 @@
+name: Verify incident desk with OpenAI
+on:
+  workflow_dispatch:
+  push:
+    tags: ['verify-desk-openai-*']
+permissions:
+  contents: read
+concurrency:
+  group: desk-openai-verification
+  cancel-in-progress: false
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install .
+      - name: Call OpenAI and verify the resulting MCP evidence
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIVEWHYS_OPENAI_MODEL: ${{ vars.FIVEWHYS_OPENAI_MODEL }}
+        run: python scripts/record_desk_openai.py "$RUNNER_TEMP/openai-desk.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: ${{ !cancelled() }}
+        with:
+          name: openai-desk
+          path: ${{ runner.temp }}/openai-desk.json
+          if-no-files-found: ignore
