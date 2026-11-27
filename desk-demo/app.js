@@ -356,7 +356,9 @@ async function loadArchive() {
         run.model_usage?.model &&
         /[가-힣]/.test(run.question),
     );
-    selectRun(preferred || runs[0], "저장된 실행");
+    const requested = new URLSearchParams(location.search).get("run");
+    const linked = runs.find((run) => run.id === requested);
+    selectRun(linked || preferred || runs[0], "저장된 실행");
   } catch {
     loadNotice.textContent = "조사 기록을 불러오지 못했습니다.";
     const retry = element("button", "primary", "다시 시도");
