@@ -260,13 +260,19 @@ def export_replays(results_dir):
                 break
     if not runs:
         raise SystemExit("Run evaluation before exporting replays")
-    capture = DATA / "claude-actions.json"
-    if capture.exists():
-        titles = {"dev-01": "Claude · 한국어 주문 장애 조사", "dev-02": "Claude · 영어 주문 장애 조사"}
-        for item in read(capture)["runs"]:
-            case_id = item["case"]
-            runs.append({**item["trace"], "id":f"claude-{case_id}", "title":titles[case_id],
-                         "evaluation_mode":"claude", "evaluation_passed":item["score"]["passed"]})
+    provider_captures = [
+        (DATA / "claude-actions.json",
+         {"dev-01":"Claude · 한국어 주문 장애 조사", "dev-02":"Claude · 영어 주문 장애 조사"}),
+        (DATA / "comparison" / "claude-actions.json",
+         {"hold-03":"Claude · 연결 풀 고갈과 캐시 스탬피드 비교",
+          "challenge-05":"Claude · 두 보고서와 현재 슬로우 쿼리 비교"}),
+    ]
+    for capture, titles in provider_captures:
+        if capture.exists():
+            for item in read(capture)["runs"]:
+                case_id = item["case"]
+                runs.append({**item["trace"], "id":f"claude-{case_id}", "title":titles[case_id],
+                             "evaluation_mode":"claude", "evaluation_passed":item["score"]["passed"]})
     write(ROOT/"desk-demo/runs.json",runs)
 
 

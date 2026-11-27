@@ -1,0 +1,583 @@
+{
+  "mode": "offline",
+  "documents": 9,
+  "passed": 36,
+  "pairs": [
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2024-08-08-bad-config-rollout"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2024-08-08-bad-config-rollout:ab076a610f"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2024-10-19-kafka-consumer-lag"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2024-12-05-dns-resolution"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2024-12-05-dns-resolution:57cd1ba746"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2025-01-17-cache-stampede"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2025-01-17-cache-stampede:9b9f82aa63"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2025-03-30-tls-cert-expiry"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2025-06-21-disk-full-logging"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2025-06-21-disk-full-logging:6a95f8577c"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-05-23-rollback-failure",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-05-23-rollback-failure:8cb7783b69",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2024-10-19-kafka-consumer-lag"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2024-12-05-dns-resolution"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2024-12-05-dns-resolution:57cd1ba746"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2025-01-17-cache-stampede"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2025-01-17-cache-stampede:9b9f82aa63"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2025-03-30-tls-cert-expiry"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2025-06-21-disk-full-logging"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2025-06-21-disk-full-logging:6a95f8577c"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-08-08-bad-config-rollout",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-08-08-bad-config-rollout:ab076a610f",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-10-19-kafka-consumer-lag",
+        "2024-12-05-dns-resolution"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5",
+        "doc:2024-12-05-dns-resolution:57cd1ba746"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-10-19-kafka-consumer-lag",
+        "2025-01-17-cache-stampede"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5",
+        "doc:2025-01-17-cache-stampede:9b9f82aa63"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-10-19-kafka-consumer-lag",
+        "2025-03-30-tls-cert-expiry"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5",
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-10-19-kafka-consumer-lag",
+        "2025-06-21-disk-full-logging"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5",
+        "doc:2025-06-21-disk-full-logging:6a95f8577c"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-10-19-kafka-consumer-lag",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-10-19-kafka-consumer-lag",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-10-19-kafka-consumer-lag:232a4d84b5",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-12-05-dns-resolution",
+        "2025-01-17-cache-stampede"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-12-05-dns-resolution:57cd1ba746",
+        "doc:2025-01-17-cache-stampede:9b9f82aa63"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-12-05-dns-resolution",
+        "2025-03-30-tls-cert-expiry"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-12-05-dns-resolution:57cd1ba746",
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-12-05-dns-resolution",
+        "2025-06-21-disk-full-logging"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-12-05-dns-resolution:57cd1ba746",
+        "doc:2025-06-21-disk-full-logging:6a95f8577c"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-12-05-dns-resolution",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-12-05-dns-resolution:57cd1ba746",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2024-12-05-dns-resolution",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2024-12-05-dns-resolution:57cd1ba746",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-01-17-cache-stampede",
+        "2025-03-30-tls-cert-expiry"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-01-17-cache-stampede:9b9f82aa63",
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-01-17-cache-stampede",
+        "2025-06-21-disk-full-logging"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-01-17-cache-stampede:9b9f82aa63",
+        "doc:2025-06-21-disk-full-logging:6a95f8577c"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-01-17-cache-stampede",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-01-17-cache-stampede:9b9f82aa63",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-01-17-cache-stampede",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-01-17-cache-stampede:9b9f82aa63",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-03-30-tls-cert-expiry",
+        "2025-06-21-disk-full-logging"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc",
+        "doc:2025-06-21-disk-full-logging:6a95f8577c"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-03-30-tls-cert-expiry",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-03-30-tls-cert-expiry",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-03-30-tls-cert-expiry:983a170cbc",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-06-21-disk-full-logging",
+        "2025-09-02-payment-oom"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-06-21-disk-full-logging:6a95f8577c",
+        "doc:2025-09-02-payment-oom:3a3c516119"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-06-21-disk-full-logging",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-06-21-disk-full-logging:6a95f8577c",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    },
+    {
+      "documents": [
+        "2025-09-02-payment-oom",
+        "2025-11-14-db-connection-pool"
+      ],
+      "reason": "verified",
+      "citation_ids": [
+        "doc:2025-09-02-payment-oom:3a3c516119",
+        "doc:2025-11-14-db-connection-pool:4f2fda5f7a"
+      ],
+      "tools": [
+        "search_past_incidents",
+        "search_past_incidents"
+      ],
+      "passed": true
+    }
+  ]
+}

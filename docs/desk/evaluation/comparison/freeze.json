@@ -1,0 +1,19 @@
+{
+  "frozen_utc": "2026-11-27T07:09:52.860462+00:00",
+  "base_commit": "fd8713b35d7d61492293fed204d906320cc84eb5",
+  "repetitions": 3,
+  "sha256": {
+    "docs/desk/evaluation/comparison/cases.json": "ac7c59fec0509bf90342b0670750b37db74d20bde055e05b4cdc5f20fedc8ef2",
+    "docs/desk/evaluation/heldout.json": "70cde95ff98222ac028f131ba210226cd0722e551c1e533de738cd73766df8e7",
+    "docs/desk/evaluation/challenge.json": "d0c4fa0ba3cb6f8d2952b4557ed0d7f308dce6cb45b55e5ab00b749a3346c2a4",
+    "src/fivewhys/data/postmortems/2024-05-23-rollback-failure.md": "eed88080c22b01ba5ff84ddacd78d626d3f1e29177b72a57b30435654c403c6b",
+    "src/fivewhys/data/postmortems/2024-08-08-bad-config-rollout.md": "6d0214acb1878f475aff072b885139097b66996c2ebe5e6120b0bf98fbe19a04",
+    "src/fivewhys/data/postmortems/2024-10-19-kafka-consumer-lag.md": "abbded041d55e454d4c426dc71e9076e86d52f36be4842fce5aa1bfd96782ed3",
+    "src/fivewhys/data/postmortems/2024-12-05-dns-resolution.md": "138a1d3763dac67a6bef313dc011497a6534d7e3a239441f66be1dbda2413d83",
+    "src/fivewhys/data/postmortems/2025-01-17-cache-stampede.md": "a3abdba54f2e835b2b40df5ab567d20bbcc0e26dfb5c7e12721b05c2ea7ee32c",
+    "src/fivewhys/data/postmortems/2025-03-30-tls-cert-expiry.md": "e765255814687b2fc45babfe3f451ef2bd6cc32ee62c186cac2719240b9718a0",
+    "src/fivewhys/data/postmortems/2025-06-21-disk-full-logging.md": "1146e2cb9ba7224387ae67cc1510c36352d0fc4eb1d4af7ff9c2be846b7727b9",
+    "src/fivewhys/data/postmortems/2025-09-02-payment-oom.md": "3fa32fa8843ff9b72daf1d365c36d2acf2df319c06a30b1a551796dcf0e70b41",
+    "src/fivewhys/data/postmortems/2025-11-14-db-connection-pool.md": "c238ff8dd86cce512457ffa030d7b9571436f014eaa949dabc99e1fd66bd3ce0"
+  }
+}

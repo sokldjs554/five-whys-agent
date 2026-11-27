@@ -1090,5 +1090,431 @@
     "title": "Claude · 영어 주문 장애 조사",
     "evaluation_mode": "claude",
     "evaluation_passed": true
+  },
+  {
+    "question": "order-service 장애에 대해 현재 배포와 비교해서 과거 커넥션 풀 고갈 보고서와 캐시 스탬피드 보고서 각각의 차이를 설명해 주세요.",
+    "engine": "langgraph+mcp-stdio/model",
+    "model_calls": 1,
+    "plan": [
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "HikariPool Connection is not available timed out",
+          "service": "order-service",
+          "limit": 5
+        }
+      },
+      {
+        "tool": "list_change_events",
+        "input": {}
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "order-service connection pool exhaustion and cache stampede DB overload after cache restart",
+          "k": 2,
+          "doc": "2025-11-14-db-connection-pool",
+          "section": "근본 원인"
+        }
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "order-service connection pool exhaustion and cache stampede DB overload after cache restart",
+          "k": 2,
+          "doc": "2025-01-17-cache-stampede",
+          "section": "근본 원인"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "HikariPool Connection is not available timed out",
+          "service": "order-service",
+          "limit": 5
+        },
+        "status": "ok",
+        "output": [
+          {
+            "id": 1819,
+            "ts": "2026-07-03T14:04:04.520069+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1821,
+            "ts": "2026-07-03T14:04:09.375989+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1823,
+            "ts": "2026-07-03T14:04:14.316118+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1827,
+            "ts": "2026-07-03T14:04:17.803415+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          },
+          {
+            "id": 1828,
+            "ts": "2026-07-03T14:04:18.662919+09:00",
+            "service": "order-service",
+            "level": "ERROR",
+            "component": "db-pool",
+            "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"
+          }
+        ]
+      },
+      {
+        "tool": "list_change_events",
+        "input": {},
+        "status": "ok",
+        "output": [
+          {
+            "id": 1,
+            "ts": "2026-07-03T11:50:00+09:00",
+            "service": "user-service",
+            "kind": "deploy",
+            "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+          },
+          {
+            "id": 2,
+            "ts": "2026-07-03T13:20:00+09:00",
+            "service": "order-service",
+            "kind": "deploy",
+            "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+          }
+        ]
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "order-service connection pool exhaustion and cache stampede DB overload after cache restart",
+          "k": 2,
+          "doc": "2025-11-14-db-connection-pool",
+          "section": "근본 원인"
+        },
+        "status": "ok",
+        "output": [
+          {
+            "doc": "2025-11-14-db-connection-pool",
+            "section": "근본 원인",
+            "text": "근본 원인\n신규 쿼리가 인덱스 없는 컬럼(customer_ref)을 조건으로 사용해 풀스캔이 발생했다.\n쿼리 하나당 DB 커넥션을 10초 이상 점유하면서 풀(최대 20개)이 고갈되었고,\n커넥션을 얻지 못한 요청이 타임아웃되며 게이트웨이까지 연쇄되었다.",
+            "score": 0.03279
+          }
+        ]
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "order-service connection pool exhaustion and cache stampede DB overload after cache restart",
+          "k": 2,
+          "doc": "2025-01-17-cache-stampede",
+          "section": "근본 원인"
+        },
+        "status": "ok",
+        "output": [
+          {
+            "doc": "2025-01-17-cache-stampede",
+            "section": "근본 원인",
+            "text": "근본 원인\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다.",
+            "score": 0.03279
+          }
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "id": "doc:2025-11-14-db-connection-pool:4f2fda5f7a",
+        "text": "근본 원인\n신규 쿼리가 인덱스 없는 컬럼(customer_ref)을 조건으로 사용해 풀스캔이 발생했다.\n쿼리 하나당 DB 커넥션을 10초 이상 점유하면서 풀(최대 20개)이 고갈되었고,\n커넥션을 얻지 못한 요청이 타임아웃되며 게이트웨이까지 연쇄되었다.",
+        "source": "postmortems/2025-11-14-db-connection-pool.md · 근본 원인",
+        "title": "주문 API 커넥션 풀 고갈 (2025-11-14)"
+      },
+      {
+        "id": "doc:2025-01-17-cache-stampede:9b9f82aa63",
+        "text": "근본 원인\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다.",
+        "source": "postmortems/2025-01-17-cache-stampede.md · 근본 원인",
+        "title": "캐시 재시작 후 스탬피드로 인한 DB 과부하 (2025-01-17)"
+      },
+      {
+        "id": "change:2",
+        "text": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)",
+        "source": "db_pool_exhaustion/deploys · order-service · 2026-07-03T13:20:00+09:00"
+      },
+      {
+        "id": "log:1819",
+        "text": "HikariPool-1 - Connection is not available, request timed out after 30000ms",
+        "source": "db_pool_exhaustion/logs · order-service · 2026-07-03T14:04:04.520069+09:00"
+      }
+    ],
+    "proposed_plan": [
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "cache stampede",
+          "service": "order-service",
+          "limit": 5
+        }
+      },
+      {
+        "tool": "list_change_events",
+        "input": {}
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "order-service connection pool exhaustion and cache stampede DB overload after cache restart",
+          "k": 4
+        }
+      }
+    ],
+    "model_usage": {
+      "model": "claude-haiku-5-5",
+      "backend": "Anthropic Messages API",
+      "request_id": "msg_011ChT2GXw3GkZsZek2Nk7Zy",
+      "prompt_tokens": 1119,
+      "completion_tokens": 435,
+      "stop_reason": "tool_use",
+      "call_ids": [
+        "toolu_01AnAcACpnN3nRnod6sm3nN6",
+        "toolu_01UYHfLt8uNoSxkqJcdaFwwx",
+        "toolu_01SRDMNQH3f2gXJ2VzdGv6K3"
+      ],
+      "elapsed_ms": 2104.4
+    },
+    "status": "answered",
+    "reason": "verified",
+    "answer": "두 보고서가 설명하는 장애의 발단과 전파 과정은 다음과 같습니다.\n\n주문 API 커넥션 풀 고갈 (2025-11-14)\n신규 쿼리가 인덱스 없는 컬럼(customer_ref)을 조건으로 사용해 풀스캔이 발생했다.\n쿼리 하나당 DB 커넥션을 10초 이상 점유하면서 풀(최대 20개)이 고갈되었고,\n커넥션을 얻지 못한 요청이 타임아웃되며 게이트웨이까지 연쇄되었다. [doc:2025-11-14-db-connection-pool:4f2fda5f7a]\n\n캐시 재시작 후 스탬피드로 인한 DB 과부하 (2025-01-17)\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다. [doc:2025-01-17-cache-stampede:9b9f82aa63] 두 장애 모두 DB 커넥션 고갈로 이어졌습니다 [doc:2025-11-14-db-connection-pool:4f2fda5f7a] [doc:2025-01-17-cache-stampede:9b9f82aa63].\n\n현재 주문 장애 — 13:20의 변경 기록은 “order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)”입니다 [change:2]. 14:04에 주문 서비스가 DB 커넥션을 얻지 못해 요청이 타임아웃됐습니다 [log:1819]. 현재 원인 후보는 이 배포의 쿼리 변경입니다. 현재 변경 기록과 ‘주문 API 커넥션 풀 고갈 (2025-11-14)’의 원인 구절에는 customer_ref 조건이 함께 등장합니다 [change:2] [doc:2025-11-14-db-connection-pool:4f2fda5f7a].",
+    "id": "claude-hold-03",
+    "title": "Claude · 연결 풀 고갈과 캐시 스탬피드 비교",
+    "evaluation_mode": "claude",
+    "evaluation_passed": true
+  },
+  {
+    "question": "주문 장애에서 MySQL slow query가 보입니다. 예전 DB 풀 고갈 보고서와 캐시 스탬피드 보고서가 설명하는 원인을 각각 비교해 주세요.",
+    "engine": "langgraph+mcp-stdio/model",
+    "model_calls": 1,
+    "plan": [
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "slow query customer_ref",
+          "service": "mysql",
+          "limit": 5
+        }
+      },
+      {
+        "tool": "list_change_events",
+        "input": {}
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "DB connection pool exhaustion order-service slow query compared with cache stampede Redis cache restart MySQL overload",
+          "k": 2,
+          "doc": "2025-11-14-db-connection-pool",
+          "section": "근본 원인"
+        }
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "DB connection pool exhaustion order-service slow query compared with cache stampede Redis cache restart MySQL overload",
+          "k": 2,
+          "doc": "2025-01-17-cache-stampede",
+          "section": "근본 원인"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "slow query customer_ref",
+          "service": "mysql",
+          "limit": 5
+        },
+        "status": "ok",
+        "output": [
+          {
+            "id": 1690,
+            "ts": "2026-07-03T14:00:07.522146+09:00",
+            "service": "mysql",
+            "level": "WARN",
+            "component": "slowlog",
+            "message": "Slow query: SELECT * FROM orders WHERE customer_ref = 'cus-1963' (execution time 19.0s)"
+          },
+          {
+            "id": 1692,
+            "ts": "2026-07-03T14:00:09.498648+09:00",
+            "service": "mysql",
+            "level": "WARN",
+            "component": "slowlog",
+            "message": "Slow query: SELECT * FROM orders WHERE customer_ref = 'cus-2920' (execution time 24.9s)"
+          },
+          {
+            "id": 1710,
+            "ts": "2026-07-03T14:00:33.864415+09:00",
+            "service": "mysql",
+            "level": "WARN",
+            "component": "slowlog",
+            "message": "Slow query: SELECT * FROM orders WHERE customer_ref = 'cus-8349' (execution time 21.3s)"
+          },
+          {
+            "id": 1711,
+            "ts": "2026-07-03T14:00:41.038816+09:00",
+            "service": "mysql",
+            "level": "WARN",
+            "component": "slowlog",
+            "message": "Slow query: SELECT * FROM orders WHERE customer_ref = 'cus-6363' (execution time 20.7s)"
+          },
+          {
+            "id": 1712,
+            "ts": "2026-07-03T14:00:41.723089+09:00",
+            "service": "mysql",
+            "level": "WARN",
+            "component": "slowlog",
+            "message": "Slow query: SELECT * FROM orders WHERE customer_ref = 'cus-2103' (execution time 22.5s)"
+          }
+        ]
+      },
+      {
+        "tool": "list_change_events",
+        "input": {},
+        "status": "ok",
+        "output": [
+          {
+            "id": 1,
+            "ts": "2026-07-03T11:50:00+09:00",
+            "service": "user-service",
+            "kind": "deploy",
+            "description": "user-service v1.9.1 배포 — 프로필 이미지 리사이즈 버그 수정"
+          },
+          {
+            "id": 2,
+            "ts": "2026-07-03T13:20:00+09:00",
+            "service": "order-service",
+            "kind": "deploy",
+            "description": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)"
+          }
+        ]
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "DB connection pool exhaustion order-service slow query compared with cache stampede Redis cache restart MySQL overload",
+          "k": 2,
+          "doc": "2025-11-14-db-connection-pool",
+          "section": "근본 원인"
+        },
+        "status": "ok",
+        "output": [
+          {
+            "doc": "2025-11-14-db-connection-pool",
+            "section": "근본 원인",
+            "text": "근본 원인\n신규 쿼리가 인덱스 없는 컬럼(customer_ref)을 조건으로 사용해 풀스캔이 발생했다.\n쿼리 하나당 DB 커넥션을 10초 이상 점유하면서 풀(최대 20개)이 고갈되었고,\n커넥션을 얻지 못한 요청이 타임아웃되며 게이트웨이까지 연쇄되었다.",
+            "score": 0.03279
+          }
+        ]
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "DB connection pool exhaustion order-service slow query compared with cache stampede Redis cache restart MySQL overload",
+          "k": 2,
+          "doc": "2025-01-17-cache-stampede",
+          "section": "근본 원인"
+        },
+        "status": "ok",
+        "output": [
+          {
+            "doc": "2025-01-17-cache-stampede",
+            "section": "근본 원인",
+            "text": "근본 원인\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다.",
+            "score": 0.03279
+          }
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "id": "doc:2025-11-14-db-connection-pool:4f2fda5f7a",
+        "text": "근본 원인\n신규 쿼리가 인덱스 없는 컬럼(customer_ref)을 조건으로 사용해 풀스캔이 발생했다.\n쿼리 하나당 DB 커넥션을 10초 이상 점유하면서 풀(최대 20개)이 고갈되었고,\n커넥션을 얻지 못한 요청이 타임아웃되며 게이트웨이까지 연쇄되었다.",
+        "source": "postmortems/2025-11-14-db-connection-pool.md · 근본 원인",
+        "title": "주문 API 커넥션 풀 고갈 (2025-11-14)"
+      },
+      {
+        "id": "doc:2025-01-17-cache-stampede:9b9f82aa63",
+        "text": "근본 원인\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다.",
+        "source": "postmortems/2025-01-17-cache-stampede.md · 근본 원인",
+        "title": "캐시 재시작 후 스탬피드로 인한 DB 과부하 (2025-01-17)"
+      },
+      {
+        "id": "change:2",
+        "text": "order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)",
+        "source": "db_pool_exhaustion/deploys · order-service · 2026-07-03T13:20:00+09:00"
+      },
+      {
+        "id": "log:1690",
+        "text": "Slow query: SELECT * FROM orders WHERE customer_ref = 'cus-1963' (execution time 19.0s)",
+        "source": "db_pool_exhaustion/logs · mysql · 2026-07-03T14:00:07.522146+09:00"
+      }
+    ],
+    "proposed_plan": [
+      {
+        "tool": "search_logs",
+        "input": {
+          "query": "slow query cache stampede",
+          "service": "mysql",
+          "limit": 10
+        }
+      },
+      {
+        "tool": "list_change_events",
+        "input": {}
+      },
+      {
+        "tool": "search_past_incidents",
+        "input": {
+          "query": "DB connection pool exhaustion order-service slow query compared with cache stampede Redis cache restart MySQL overload",
+          "k": 4
+        }
+      }
+    ],
+    "model_usage": {
+      "model": "claude-haiku-5-5",
+      "backend": "Anthropic Messages API",
+      "request_id": "msg_011ChT2GicUy5kMd2bGvLDoT",
+      "prompt_tokens": 1122,
+      "completion_tokens": 401,
+      "stop_reason": "tool_use",
+      "call_ids": [
+        "toolu_017SCKtQ5HmRDTf824whxHR7",
+        "toolu_01V1U1Yehqg1BoCoUVeoku4S",
+        "toolu_01ESaX9d2GWzg6j5D47C2L4u"
+      ],
+      "elapsed_ms": 2026.5
+    },
+    "status": "answered",
+    "reason": "verified",
+    "answer": "두 보고서가 설명하는 장애의 발단과 전파 과정은 다음과 같습니다.\n\n주문 API 커넥션 풀 고갈 (2025-11-14)\n신규 쿼리가 인덱스 없는 컬럼(customer_ref)을 조건으로 사용해 풀스캔이 발생했다.\n쿼리 하나당 DB 커넥션을 10초 이상 점유하면서 풀(최대 20개)이 고갈되었고,\n커넥션을 얻지 못한 요청이 타임아웃되며 게이트웨이까지 연쇄되었다. [doc:2025-11-14-db-connection-pool:4f2fda5f7a]\n\n캐시 재시작 후 스탬피드로 인한 DB 과부하 (2025-01-17)\n계획 재시작 절차에 캐시 워밍/점진 전환 단계가 없었다. 콜드 캐시 상태에서\n전체 트래픽이 유입되며 동일 키에 대한 중복 DB 조회가 폭증(stampede)했고,\nDB 커넥션이 고갈되며 캐시와 무관한 쿼리까지 실패했다. [doc:2025-01-17-cache-stampede:9b9f82aa63] 두 장애 모두 DB 커넥션 고갈로 이어졌습니다 [doc:2025-11-14-db-connection-pool:4f2fda5f7a] [doc:2025-01-17-cache-stampede:9b9f82aa63].\n\n현재 주문 장애 — 13:20의 변경 기록은 “order-service v2.4.0 배포 — 주문 조회 쿼리 리팩터링 (customer_ref 조건 추가)”입니다 [change:2]. 14:00에 MySQL이 customer_ref 조건의 주문 조회를 슬로우 쿼리로 기록했습니다 [log:1690]. 현재 원인 후보는 이 배포의 쿼리 변경입니다. 현재 변경 기록과 ‘주문 API 커넥션 풀 고갈 (2025-11-14)’의 원인 구절에는 customer_ref 조건이 함께 등장합니다 [change:2] [doc:2025-11-14-db-connection-pool:4f2fda5f7a].",
+    "id": "claude-challenge-05",
+    "title": "Claude · 두 보고서와 현재 슬로우 쿼리 비교",
+    "evaluation_mode": "claude",
+    "evaluation_passed": true
   }
 ]

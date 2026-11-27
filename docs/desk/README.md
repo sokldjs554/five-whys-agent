@@ -6,6 +6,14 @@
 
 [Claude 한국어 실행 바로 열기](https://sokldjs554.github.io/five-whys-agent/desk/?run=claude-dev-01) · [Claude 영어 실행](https://sokldjs554.github.io/five-whys-agent/desk/?run=claude-dev-02) · [GitHub Actions 실행 원본](evaluation/claude-actions.json)
 
+## 두 보고서의 원인 비교
+
+예를 들어 “커넥션 풀 고갈 보고서와 캐시 스탬피드 보고서의 근본 원인을 비교해 줘”라고 입력한다. 두 문서의 이름을 확인한 뒤 MCP 검색에 문서와 ‘근본 원인’ 섹션을 지정한다. 현재 주문 장애에 대한 질문이 함께 있으면 현재 배포와 로그도 읽는다. 답변의 각 근거 번호를 눌러 보고서 제목, 원문, 해당 검색의 반환값을 확인할 수 있다. [두 보고서 비교 데모](https://sokldjs554.github.io/five-whys-agent/desk/?run=claude-hold-03) · [비교 코드](../../src/fivewhys/desk/comparison.py) · [비교 평가와 실패 재현](evaluation/comparison/)
+
+## 응답 시간과 처리 용량
+
+격리된 로컬 API에서 완료 결과 조회와 새 조사 접수를 따로 측정했다. 42건을 짧은 시간에 제출했을 때 32건이 접수되고 10건은 HTTP 429를 받았다. 접수한 작업의 완료 p95는 19.32초, 큐 대기 p95는 18.70초였다. 이 값은 규칙 계획기와 단일 워커를 사용한 합성 실험에 해당한다. [측정 조건·재현 명령·다음 실험](load/README.md) · [요청별 측정값](load/local-run.json)
+
 ## 코드와 데이터 흐름
 
 ```mermaid

@@ -81,7 +81,7 @@ with sync_playwright() as p:
         active["id"],
     )
     capture(page, "desktop.png")
-    page.locator("#plan summary").click()
+    page.locator("#plan > summary").click()
     expect(page.locator("#plan-input")).to_contain_text(active["plan"][0]["tool"])
     page.locator(".cite-link").nth(1).click()
     assert page.locator("#evidence-2").evaluate("d=>d.open")
@@ -98,6 +98,19 @@ with sync_playwright() as p:
     expect(page.locator("#record-id")).to_have_text(fail["id"])
     expect(page.locator("#verdict")).to_have_text("판단 보류")
     expect(page.locator("#citation-count")).to_have_text(str(len(fail["citations"])))
+    pair = next((r for r in runs if r["id"] == "claude-hold-03"), None)
+    if pair:
+        page.goto(url + "?run=claude-hold-03")
+        expect(page.locator("#record-id")).to_have_text(pair["id"])
+        docs = [ref for ref in pair["citations"] if ref["id"].startswith("doc:")]
+        assert len(docs) == 2 and docs[0]["title"] != docs[1]["title"]
+        for ref in docs:
+            page.get_by_title(ref["id"], exact=True).first.click()
+            expect(page.locator(".citation[open] .cite-id").filter(has_text=ref["id"])).to_have_count(1)
+        page.locator("#plan > summary").click()
+        page.locator("#original-plan > summary").click()
+        expect(page.locator("#original-plan-input")).to_contain_text("search_past_incidents")
+        print("PASS independent report citations and expanded comparison plan")
     print(
         "PASS desktop real record, trace, citation navigation, search/filter, withheld"
     )

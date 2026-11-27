@@ -1,0 +1,123 @@
+{
+  "started_utc": "2026-11-27T07:12:52.462478+00:00",
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "dependencies": {
+      "mcp": "1.30.0",
+      "langgraph": "1.2.24",
+      "pydantic": "2.14.4",
+      "numpy": "2.5.5"
+    },
+    "planner_version": "v2",
+    "implementation_sha256": {
+      "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "cache.py": "9163c4f1320ef3d664443de4498b31c12d1d819ca79247ae03a78ed52d579f71",
+      "claude_planner.py": "eec972884f14fda188bf803c54e36c1a5711fd261fe916a5504fdec4536f942d",
+      "embedding_service.py": "cf5f0ad799e57fc25513088dbb2514d18a7a9011a65be44ffb6a8c6ec0e3ddde",
+      "engine.py": "cff6e1da7a0f0d4d5c8090b98a5259a0c5805a8739393e53f80d0dc938467b0f",
+      "evidence.py": "993d83f8a3659d11cd2b90b94b3922a0f6841e399334e912ae047555f0f9310e",
+      "jobs.py": "f7133437c66f46767fd5aaab36d2b79675b0d9905237272b1ea390a744c3813c",
+      "local_model.py": "77e578cc32faad3262b6f9823b3175ec6ba95ef5934c0eb8af6e03824c8d9e18",
+      "mcp_tools.py": "5c5be81b6184708ca5ca370b02eb6ab8796425b12373a4cfdf896c8ed0766304",
+      "openai_planner.py": "f03cab616881dc799f5e2ac8e5f9d8552ba388cc9f645db91730f7a418fb8742",
+      "routes.py": "f41abb992397133f3ba1ced1159a0926bf0e3a2e818c395afa196bb0315518d3",
+      "vocabulary.py": "8bb1c93aa5214f2ff2d5bb00e7a177f4f686bd7e746a28d26d3bd1803fb6ed22"
+    },
+    "cases_sha256": "ac7c59fec0509bf90342b0670750b37db74d20bde055e05b4cdc5f20fedc8ef2"
+  },
+  "repetitions": 3,
+  "cases": 10,
+  "passed": 6,
+  "total": 30,
+  "distinct_model_response_ids": 0,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "attempted_tool_calls": 0,
+  "by_case": {
+    "hold-03": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "challenge-05": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-01": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-02": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-03": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-04": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-05": {
+      "pass": 3,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-06": {
+      "pass": 3,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-07": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    },
+    "compare-08": {
+      "pass": 0,
+      "total": 3,
+      "reasons": {
+        "out_of_scope": 3
+      }
+    }
+  },
+  "by_expected": {
+    "answered": {
+      "pass": 0,
+      "runs": 18
+    },
+    "withheld": {
+      "pass": 6,
+      "runs": 12
+    }
+  },
+  "latency_ms": {
+    "p50": 0.0,
+    "p95": 0.0
+  }
+}
