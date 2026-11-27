@@ -10,6 +10,35 @@ from time import monotonic
 from .vocabulary import relevant_vocabulary
 
 
+def secret_value():
+    value = os.environ["OPENAI_API_KEY"].strip()
+    for prefix in ("export OPENAI_API_KEY=", "OPENAI_API_KEY=", "Bearer "):
+        if value.startswith(prefix):
+            value = value[len(prefix):].strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in (chr(34), chr(39)):
+        value = value[1:-1].strip()
+    return value
+
+
+def classify_error(error):
+    code = error.get("code")
+    known = {"insufficient_quota", "model_not_found", "invalid_api_key", "rate_limit_exceeded",
+             "unsupported_parameter", "invalid_organization", "invalid_project", "ip_not_authorized"}
+    if code in known:
+        return code
+    message = str(error.get("message") or "").lower()
+    for signals, label in [
+        (("missing scopes", "insufficient permissions", "insufficient scope"), "missing_permissions"),
+        (("incorrect api key", "invalid api key", "invalid bearer", "invalid token"), "invalid_api_key"),
+        (("revoked", "deactivated", "disabled"), "credential_or_account_inactive"),
+        (("ip allowlist", "ip address"), "ip_restriction"),
+        (("organization", "organisation", "project"), "organization_or_project_access"),
+    ]:
+        if any(signal in message for signal in signals):
+            return label
+    return "provider_rejection_unspecified"
+
+
 class OpenAIPlanner:
     def __init__(self):
         self.model = os.getenv("FIVEWHYS_OPENAI_MODEL") or "gpt-4.1-mini"
@@ -50,7 +79,7 @@ class OpenAIPlanner:
         return [{"tool":item["name"], "input":json.loads(item["arguments"])} for item in calls]
 
     def _post(self, payload):
-        key = os.environ["OPENAI_API_KEY"].strip()
+        key = secret_value()
         if not key:
             raise ValueError("OPENAI_API_KEY is missing")
         connection = http.client.HTTPSConnection("api.openai.com", timeout=25)
@@ -64,9 +93,7 @@ class OpenAIPlanner:
                 raise ValueError("Oversized response")
             parsed = json.loads(body)
             if response.status != 200:
-                code = parsed.get("error", {}).get("code")
-                self.error_code = code if code in {"insufficient_quota","model_not_found",
-                    "invalid_api_key","rate_limit_exceeded","unsupported_parameter"} else None
+                self.error_code = classify_error(parsed.get("error") or {})
                 raise RuntimeError(f"OpenAI HTTP {response.status}")
             return parsed
         finally:

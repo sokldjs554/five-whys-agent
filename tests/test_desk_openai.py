@@ -35,3 +35,16 @@ def test_partial_response_rejected(monkeypatch):
     monkeypatch.setattr(OpenAIPlanner,"_post",lambda self,payload: {"status":"incomplete"})
     with pytest.raises(ValueError):
         asyncio.run(OpenAIPlanner()("주문 장애", []))
+
+
+@pytest.mark.parametrize("value", ["fixture", "  fixture\n", "OPENAI_API_KEY='fixture'", "Bearer fixture"])
+def test_accepts_pasted_env_assignment(monkeypatch, value):
+    from fivewhys.desk.openai_planner import secret_value
+    monkeypatch.setenv("OPENAI_API_KEY", value)
+    assert secret_value() == "fixture"
+
+
+def test_error_classification_returns_only_fixed_label():
+    from fivewhys.desk.openai_planner import classify_error
+    assert classify_error({"message":"Missing scopes: api.responses.write"}) == "missing_permissions"
+    assert classify_error({"code":"unrecognized", "message":"private detail"}) == "provider_rejection_unspecified"
