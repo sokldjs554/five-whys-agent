@@ -1,6 +1,6 @@
 # 주문 서비스 장애 조사 데스크
 
-**면접 시연**　[공개 데모](https://sokldjs554.github.io/five-whys-agent/desk/) · [공고 원문 대조표](requirements.md) · [저장소 선정 근거](selection.md) · [평가와 실패 사례](evaluation/README.md) · [화면 설계·캡처](design.md)
+**면접 시연**　[공개 데모](https://sokldjs554.github.io/five-whys-agent/desk/) · [공고 원문 대조표](requirements.md) · [저장소 선정 근거](selection.md) · [평가와 실패 사례](evaluation/README.md) · [화면 설계·캡처](design.md) · [배포 버전·CI](release.md)
 
 합성 주문 서비스의 지연 신고를 받은 운영자가 배포 직전의 변경, 장애 창의 실제 로그, 이전 장애보고서를 대조하는 Python 프로젝트다. 로그인 없이 데모의 **조사 기록 선택**을 열고, 결과 문장의 근거 번호를 누른 뒤 **도구 호출 기록**을 펼치면 해당 실행의 입력과 반환값을 확인할 수 있다. 보류 사례에는 사유와 실행된 단계가 남는다. 공개 화면은 저장된 실행을 보여 주며 새 모델 호출은 로컬 실행 경로에서 시작한다.
 
