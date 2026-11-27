@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#24184d" />
+    <meta
+      name="description"
+      content="질문부터 도구 호출과 인용 원문까지, 장애 조사 에이전트의 실행 기록을 살펴보세요."
+    />
+    <title>장애 조사 데스크 · Five Whys</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#report">조사 결과로 이동</a>
+    <header class="masthead wrap">
+      <div class="brand">
+        <i class="logomark" aria-hidden="true"></i><span>Five Whys</span
+        ><span class="brand-extra">Incident Desk</span>
+      </div>
+      <a
+        class="source-link"
+        href="https://github.com/sokldjs554/five-whys-agent"
+        >GitHub<span aria-hidden="true"> ↗</span></a
+      >
+    </header>
+    <main class="wrap">
+      <section class="cover" aria-labelledby="title">
+        <div class="intro">
+          <div class="eyebrow">모의 장애 · INVESTIGATION ARCHIVE</div>
+          <h1 id="title">장애 조사 데스크</h1>
+          <p>
+            에이전트가 어떤 기록을 찾아 답했는지,<br class="mobile-break" />
+            왜 판단을 보류했는지 살펴보세요.
+          </p>
+          <button type="button" id="open-library" class="primary" disabled>
+            <span class="icon search" aria-hidden="true"></span>조사 기록 선택
+          </button>
+        </div>
+        <div class="folio" aria-hidden="true">
+          <div class="sheet back"></div>
+          <div class="sheet middle"></div>
+          <div class="sheet front">
+            <span class="paper-tab"></span
+            ><span class="paper-caption">저장된 조사 기록</span
+            ><span class="paper-rules"></span><span class="paper-index"></span>
+          </div>
+        </div>
+      </section>
+      <section id="live" class="live-box" hidden>
+        <details>
+          <summary>새 질문 조사하기 <small>로컬 API</small></summary>
+          <form id="live-form">
+            <label for="question">조사 질문</label>
+            <textarea
+              id="question"
+              required
+              minlength="2"
+              maxlength="700"
+              rows="2"
+              placeholder="확인하려는 사건과 질문을 입력하세요"
+            ></textarea>
+            <div class="controls">
+              <label for="engine">실행 엔진</label
+              ><select id="engine">
+                <option value="rules">규칙 기반</option>
+                <option value="local">로컬 모델</option></select
+              ><button class="primary" type="submit">조사 시작</button>
+            </div>
+          </form>
+          <p id="live-status" role="status"></p>
+        </details>
+      </section>
+      <div id="loading" class="notice" role="status">
+        조사 기록을 불러오는 중입니다.
+      </div>
+      <section id="report" tabindex="-1" hidden aria-labelledby="report-title">
+        <div class="report-head">
+          <div class="record-kicker">
+            <span class="little-line"></span><span id="record-mode"></span
+            ><span id="record-id" class="record-id"></span>
+          </div>
+          <h2 id="report-title"></h2>
+          <p id="original-question"></p>
+          <div id="metadata" class="metadata"></div>
+        </div>
+        <div class="result-grid">
+          <article class="answer page">
+            <div class="section-title">
+              <h3>조사 결과</h3>
+              <span id="verdict" class="badge"></span>
+            </div>
+            <div id="answer"></div>
+            <p id="evaluation-note" class="evaluation-note" hidden></p>
+          </article>
+          <article class="evidence page">
+            <div class="section-title">
+              <h3>인용 근거</h3>
+              <span class="count" id="citation-count"></span>
+            </div>
+            <div id="citations"></div>
+          </article>
+        </div>
+        <section class="trace" aria-labelledby="trace-title">
+          <div class="section-title">
+            <h3 id="trace-title">도구 호출 기록</h3>
+            <span class="count" id="step-count"></span>
+          </div>
+          <p class="hint">
+            각 단계를 열면 도구에 보낸 입력과 반환값을 확인할 수 있습니다.
+          </p>
+          <ol id="trace-list"></ol>
+          <details id="plan" class="plan" hidden>
+            <summary>호출 전 조사 계획</summary>
+            <div id="plan-metadata" class="metadata"></div>
+            <pre
+              id="plan-input"
+              tabindex="0"
+              aria-label="조사 계획 원자료"
+            ></pre>
+          </details>
+        </section>
+      </section>
+      <noscript
+        ><p>
+          실행 기록을 보려면 자바스크립트를 켜거나
+          <a href="./runs.json">실행 원자료</a>를 여세요.
+        </p></noscript
+      >
+    </main>
+    <footer class="wrap">
+      <span>Five Whys</span>
+      <div>
+        <a href="./runs.json">실행 원자료 JSON</a
+        ><a href="https://sokldjs554.github.io/five-whys-agent/claude.html"
+          >기존 Claude 조사 ↗</a
+        >
+      </div>
+    </footer>
+    <dialog id="library" aria-labelledby="library-title">
+      <div class="modal-head">
+        <h2 id="library-title">조사 기록 선택</h2>
+        <button
+          type="button"
+          id="close-library"
+          class="close"
+          aria-label="기록 선택 닫기"
+        >
+          ×
+        </button>
+      </div>
+      <div class="modal-controls">
+        <label class="field-label" for="query">기록 검색</label>
+        <div class="search-wrap">
+          <span class="icon search" aria-hidden="true"></span
+          ><input
+            type="search"
+            id="query"
+            placeholder="질문, 기록 ID 또는 도구명"
+            autocomplete="off"
+          />
+        </div>
+        <div id="filters" aria-label="조사 상태 필터" role="group">
+          <button data-filter="all" aria-pressed="true">전체</button
+          ><button data-filter="answered" aria-pressed="false">답변</button
+          ><button data-filter="withheld" aria-pressed="false">
+            판단 보류
+          </button>
+        </div>
+      </div>
+      <div class="library-scroll">
+        <p id="matches" aria-live="polite"></p>
+        <div id="choices"></div>
+      </div>
+    </dialog>
+    <div id="announcement" role="status" class="sr"></div>
+  </body>
+</html>
