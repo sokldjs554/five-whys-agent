@@ -24,7 +24,7 @@ SUBJECT_NAMES = {
 }
 
 _COMPARISON = re.compile(r"비교|차이|대조|각각|(?:어떻게|무엇이|뭐가|어디가|뭐가\s*어떻게)\s*(?:달|다르)|다른\s*점|compare|contrast|differ|versus|\bvs\.?\b|respectively", re.I)
-_CURRENT = re.compile(r"현재|이번|지금|실시간|실제\s*(?:배포|로그|장애)|오늘|현\s*장애|"
+_CURRENT = re.compile(r"현재|이번|지금|실시간|최근\s*(?:배포|로그|변경)|(?:latest|recent)\s+(?:deployment|logs?|change)\b|실제\s*(?:배포|로그|장애)|오늘|현\s*장애|"
                       r"(?:보입니다|관측됐|보였|관찰됐|발견됐|발생\s*중)|(?:주문|order-service)\s*장애에서|"
                       r"we(?:'re| are) seeing|we (?:see|observed)|shows? up in (?:our|the) logs|current|live\s+(?:log|change|incident)|today|ongoing|this\s+(?:incident|deployment)", re.I)
 _REPORT = re.compile(r"보고서|문서|사례|포스트모템|postmortems?|reports?|documents?|cases?", re.I)

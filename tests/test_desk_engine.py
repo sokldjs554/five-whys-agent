@@ -154,6 +154,12 @@ def compare(question, **kwargs):
     return asyncio.run(investigate(question, **kwargs))
 
 
+def test_compare_recent_deployment_with_one_historical_report():
+    result = compare("HikariPool 오류가 주문 로그에 찍혔습니다. 최근 배포와 지난 장애 보고서를 대조해 주세요.")
+    assert result["reason"] == "verified"
+    assert {ref["id"].split(":")[0] for ref in result["citations"]} == {"log", "change", "doc"}
+
+
 def test_colloquial_korean_named_comparison():
     result = compare("주문 서비스 DB 연결 풀 고갈 보고서와 로그 디스크 고갈 보고서는 뭐가 달라?")
     assert result["status"] == "answered" and len(result["citations"]) == 2
